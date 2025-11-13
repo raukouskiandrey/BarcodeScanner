@@ -1,0 +1,16 @@
+# ninja log v7
+40	661	7840557291524001	BarcodeScanner_autogen/timestamp	c517aa630abfb208
+40	661	7840557291524001	BarcodeScanner_autogen/mocs_compilation.cpp	c517aa630abfb208
+40	661	7840557291524001	C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/BarcodeScanner_autogen/timestamp	c517aa630abfb208
+40	661	7840557291524001	C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/BarcodeScanner_autogen/mocs_compilation.cpp	c517aa630abfb208
+164	3323	7840540386070960	CMakeFiles/BarcodeScanner.dir/barcodescanner.cpp.obj	850b5ffddcaeafa3
+666	3654	7840557291981318	CMakeFiles/BarcodeScanner.dir/main.cpp.obj	ae0821ef54fd77cc
+662	3758	7840557291930917	CMakeFiles/BarcodeScanner.dir/BarcodeScanner_autogen/mocs_compilation.cpp.obj	82ddb1d4bd7b323
+670	4203	7840557291981318	CMakeFiles/BarcodeScanner.dir/mainwindow.cpp.obj	4eebffeb42929e08
+3439	5844	7840544783408967	BarcodeScanner.exe	a29694dcce8f1dad
+40	175	7840557776534952	BarcodeScanner_autogen/timestamp	c517aa630abfb208
+40	175	7840557776534952	BarcodeScanner_autogen/mocs_compilation.cpp	c517aa630abfb208
+40	175	7840557776534952	C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/BarcodeScanner_autogen/timestamp	c517aa630abfb208
+40	175	7840557776534952	C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/BarcodeScanner_autogen/mocs_compilation.cpp	c517aa630abfb208
+176	3217	7840557777899467	CMakeFiles/BarcodeScanner.dir/barcodescanner.cpp.obj	850b5ffddcaeafa3
+3217	5624	7840557808274519	BarcodeScanner.exe	a29694dcce8f1dad

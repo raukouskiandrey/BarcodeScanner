@@ -1,0 +1,5 @@
+C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/CMakeFiles/BarcodeScanner.dir
+C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/CMakeFiles/edit_cache.dir
+C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/CMakeFiles/rebuild_cache.dir
+C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/CMakeFiles/BarcodeScanner_autogen_timestamp_deps.dir
+C:/Users/rauko/Desktop/untitled/build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/CMakeFiles/BarcodeScanner_autogen.dir
