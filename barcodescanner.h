@@ -9,64 +9,84 @@
 #include <chrono>
 #include <ctime>
 #include <zbar.h>
+#include <QMap>
+#include <QString>
+
+#include "country.h"
+#include "manufacturer.h"
+#include "product.h"
+#include "barcodedetector.h"
+#include "barcodedecoder.h"
+#include "barcodevalidator.h"
+#include "barcodepreprocessor.h"
+#include "barcoderegionfinder.h"
+#include "countrydataloader.h"
+#include "manufacturerdataloader.h"
+#include "productdataloader.h"
+#include "fileexportservice.h"
+#include "resultdisplay.h"
+
+// Определяем класс здесь чтобы был доступен везде
+class BarcodeResult {
+public:
+    std::string type;
+    std::string digits;
+    std::string fullResult;
+    std::string country;
+    std::string manufacturerCode;
+    std::string productCode;
+
+    BarcodeResult()
+        : type("Неизвестно"), digits(""), fullResult(""), country(""), manufacturerCode(""), productCode("")
+    {
+    }
+
+    BarcodeResult(const std::string& t, const std::string& d, const std::string& f = "",
+                  const std::string& c = "", const std::string& m = "", const std::string& p = "")
+        : type(t), digits(d), fullResult(f), country(c), manufacturerCode(m), productCode(p)
+    {
+    }
+
+    bool isValid() const {
+        return !type.empty() && type != "Неизвестно" && type != "Ошибка" && !digits.empty();
+    }
+
+    std::string toString() const {
+        return type + ": " + digits;
+    }
+};
 
 class BarcodeReader {
 public:
-    struct BarcodeResult {
-        std::string type;
-        std::string digits;
-        std::string fullResult;
-        std::string country;
-        std::string manufacturerCode;
-        std::string productCode;
-    };
+    // Используем тот же класс
+    typedef ::BarcodeResult BarcodeResult;
 
     BarcodeReader();
+    ~BarcodeReader();
+
     BarcodeResult decode(const cv::Mat& image);
     BarcodeResult decode(const std::string& filename);
-
-    static std::string getCountryName(const std::string& prefix);
-    static void loadCountryCodes();
 
     static void saveToFile(const BarcodeResult& result);
     static void saveToFile(const std::string& barcodeData);
 
 private:
-    static std::map<std::string, std::string> countryCodesMap;
-    static bool countryCodesLoaded;
+    CountryDataLoader countryLoader;
+    ManufacturerDataLoader manufacturerLoader;
+    ProductDataLoader productLoader;
+    BarcodeDetector detector;
+    BarcodeDecoder decoder;
+    BarcodeValidator validator;
+    BarcodePreprocessor preprocessor;
+    BarcodeRegionFinder regionFinder;
 
-    // Приватные методы для сохранения в разные файлы
-    static void saveToMainFile(const BarcodeResult& result);
-    static void saveToCountryFile(const BarcodeResult& result);
-    static void saveToManufacturerFile(const BarcodeResult& result);
-    static void saveToProductFile(const BarcodeResult& result);
-    static void saveToStatisticsFile(const BarcodeResult& result);
+    void loadData();
+    void cleanupData();
 
-    std::vector<int> extractBits(const std::vector<int>& profile);
-    BarcodeResult decodeBits(const std::vector<int>& bits);
-    BarcodeResult tryDecodeEAN13(const std::string& bitstream);
-    BarcodeResult tryDecodeEAN8(const std::string& bitstream);
-    static bool validateChecksum(const std::string& ean);
-
-    // 🔥 Advanced Barcode Scanner методы
-    BarcodeResult advancedDecode(const cv::Mat& image);
-    std::vector<std::vector<cv::Point>> detectWithOpenCV(const cv::Mat& frame);
-    std::vector<cv::Rect> detectCurvedBarcodesOptimized(const cv::Mat& frame);
-    std::vector<cv::Rect> extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size);
-    bool isValidBarcodeRegionExtended(const cv::Rect& rect, const cv::Size& image_size, const std::vector<cv::Point>& contour);
-    cv::Rect expandBarcodeRegion(const cv::Rect& original, const cv::Size& image_size);
-    std::vector<cv::Rect> removeDuplicateRegions(const std::vector<cv::Rect>& regions);
-    bool hasBarcodeTextureAdvanced(const cv::Mat& region);
-    std::string smartDecodeWithUnwarp(const cv::Mat& frame, const cv::Rect& rect);
-    cv::Mat enhanceContrast(const cv::Mat& input);
-    cv::Mat enhanceSharpness(const cv::Mat& input, double strength);
-    std::string decodeWithZBar(const cv::Mat& roi);
-    std::string filterBarcodeResult(const std::string& result);
-    BarcodeResult parseZBarResult(const std::string& zbarResult);
     BarcodeResult createDetailedResult(const BarcodeResult& basicResult);
-
-    cv::barcode::BarcodeDetector opencv_detector;
-    zbar::ImageScanner zbar_scanner;
+    BarcodeResult createDetailedResultWithClasses(const BarcodeResult& basicResult);
+    BarcodeResult advancedDecode(const cv::Mat& image);
+    BarcodeResult parseZBarResult(const std::string& zbarResult);
 };
 
-#endif
+#endif // BARCODESCANNER_H
