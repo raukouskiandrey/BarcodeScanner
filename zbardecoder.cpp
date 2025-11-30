@@ -1,20 +1,17 @@
-#include "zbardecoder.h"
+#include "ZBarDecoder.h"
+#include "BarcodeResult.h"
 #include <iostream>
 
 ZBarDecoder::ZBarDecoder() {
-    zbar_scanner.set_config(zbar::ZBAR_EAN13, zbar::ZBAR_CFG_ENABLE, 1);
-    zbar_scanner.set_config(zbar::ZBAR_EAN8, zbar::ZBAR_CFG_ENABLE, 1);
-    zbar_scanner.set_config(zbar::ZBAR_UPCA, zbar::ZBAR_CFG_ENABLE, 1);
-    zbar_scanner.set_config(zbar::ZBAR_UPCE, zbar::ZBAR_CFG_ENABLE, 1);
-    zbar_scanner.set_config(zbar::ZBAR_CODE128, zbar::ZBAR_CFG_ENABLE, 1);
-    zbar_scanner.set_config(zbar::ZBAR_CODE39, zbar::ZBAR_CFG_ENABLE, 1);
+    zbar_scanner.set_config(zbar::ZBAR_NONE, zbar::ZBAR_CFG_ENABLE, 1);
 }
 
-std::string ZBarDecoder::decode(const cv::Mat& roi) {
+std::string ZBarDecoder::decodeWithZBar(const cv::Mat& roi) {
     cv::Mat gray;
     if (roi.channels() == 3) {
         cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
-    } else {
+    }
+    else {
         gray = roi.clone();
     }
 
@@ -29,47 +26,55 @@ std::string ZBarDecoder::decode(const cv::Mat& roi) {
 
         if (scan_result > 0) {
             for (zbar::Image::SymbolIterator symbol = zbar_image.symbol_begin();
-                 symbol != zbar_image.symbol_end(); ++symbol) {
+                symbol != zbar_image.symbol_end(); ++symbol) {
 
                 std::string type_name = symbol->get_type_name();
                 std::string data = symbol->get_data();
 
                 std::cout << "ZBar detected: " << type_name << " - " << data << std::endl;
+
                 return type_name + ": " + data;
             }
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         std::cerr << "ZBar error: " << e.what() << std::endl;
     }
     return "";
 }
 
-ZBarResult ZBarDecoder::parseResult(const std::string& zbarResult) {
-    ZBarResult result;
+std::string ZBarDecoder::filterBarcodeResult(const std::string& result) {
+    if (result.empty()) return "";
+
+    // Разрешаем все типы штрих-кодов, которые может обнаружить ZBar
+    std::cout << "ZBar raw result: " << result << std::endl;
+    return result;
+}
+
+BarcodeResult ZBarDecoder::parseZBarResult(const std::string& zbarResult) {
+    BarcodeResult result;
+    result.type = "Неизвестно";
 
     if (zbarResult.empty()) {
         return result;
     }
 
+    // Парсим результат ZBar
     size_t colon_pos = zbarResult.find(":");
     if (colon_pos != std::string::npos) {
         std::string type = zbarResult.substr(0, colon_pos);
-        std::string digits = zbarResult.substr(colon_pos + 2); // +2 С‡С‚РѕР±С‹ РїСЂРѕРїСѓСЃС‚РёС‚СЊ ": "
+        std::string digits = zbarResult.substr(colon_pos + 2); // +2 чтобы пропустить ": "
 
         result.type = type;
         result.digits = digits;
         result.fullResult = zbarResult;
-    } else {
+    }
+    else {
+        // Если формат нестандартный, пытаемся извлечь данные
         result.type = "Unknown Format";
         result.digits = zbarResult;
         result.fullResult = zbarResult;
     }
 
-    return result;
-}
-
-std::string ZBarDecoder::filterBarcodeResult(const std::string& result) {
-    if (result.empty()) return "";
-    std::cout << "ZBar raw result: " << result << std::endl;
     return result;
 }

@@ -1,11 +1,7 @@
-#include "barcodepreprocessor.h"
+#include "ImagePreprocessor.h"
 
-BarcodePreprocessor::BarcodePreprocessor()
-{
-}
+cv::Mat ImagePreprocessor::enhanceContrast(const cv::Mat& input) {
 
-cv::Mat BarcodePreprocessor::enhanceContrast(const cv::Mat& input)
-{
     cv::Mat lab;
     cv::cvtColor(input, lab, cv::COLOR_BGR2Lab);
 
@@ -22,10 +18,14 @@ cv::Mat BarcodePreprocessor::enhanceContrast(const cv::Mat& input)
     return result;
 }
 
-cv::Mat BarcodePreprocessor::enhanceSharpness(const cv::Mat& input, double strength)
-{
+
+
+cv::Mat ImagePreprocessor::enhanceSharpness(const cv::Mat& input, double strength) {
+
     cv::Mat blurred, sharpened;
     cv::GaussianBlur(input, blurred, cv::Size(0, 0), 1.0);
     cv::addWeighted(input, 1.0 + strength, blurred, -strength, 0, sharpened);
     return sharpened;
 }
+
+

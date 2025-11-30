@@ -1,15 +1,8 @@
-#ifndef BARCODEPREPROCESSOR_H
-#define BARCODEPREPROCESSOR_H
-
+#pragma once
 #include <opencv2/opencv.hpp>
 
-class BarcodePreprocessor
-{
+class ImagePreprocessor {
 public:
-    BarcodePreprocessor();
-
     cv::Mat enhanceContrast(const cv::Mat& input);
     cv::Mat enhanceSharpness(const cv::Mat& input, double strength);
 };
-
-#endif // BARCODEPREPROCESSOR_H

@@ -15,6 +15,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_PREFIX_PATH "C:/msys64/mingw64")
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
+
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+
 # =============================================================================
 # OpenCV НАСТРОЙКИ
 # =============================================================================
@@ -67,58 +70,39 @@ endif()
 # =============================================================================
 
 qt_add_executable(BarcodeScanner MANUAL_FINALIZATION
-    main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    mainwindow.ui
-    barcodescanner.cpp
-    barcodescanner.h
-    country.cpp
-    country.h
-    manufacturer.cpp
-    manufacturer.h
-    product.cpp
-    product.h
-    barcodedetector.cpp
-    barcodedetector.h
-    barcodedecoder.cpp
-    barcodedecoder.h
-    barcodevalidator.cpp
-    barcodevalidator.h
-    barcodepreprocessor.cpp
-    barcodepreprocessor.h
-    barcoderegionfinder.cpp
-    barcoderegionfinder.h
-    countrydataloader.cpp
-    countrydataloader.h
-    manufacturerdataloader.cpp
-    manufacturerdataloader.h
-    productdataloader.cpp
-    productdataloader.h
-    fileexportservice.cpp
-    fileexportservice.h
-    resultdisplay.cpp
-    resultdisplay.h
-    barcodedetector.h
-    barcodedetector.cpp
-    barcodedecoder.h
-    barcodedecoder.cpp
-    barcodevalidator.h
-    barcodevalidator.cpp
-    barcodepreprocessor.h
-    barcodepreprocessor.cpp
-    barcoderegionfinder.h
-    barcoderegionfinder.cpp
-    countrydataloader.h
-    countrydataloader.cpp
-    manufacturerdataloader.h
-    manufacturerdataloader.cpp
-    productdataloader.h
-    productdataloader.cpp
-    fileexportservice.h
-    fileexportservice.cpp
-    resultdisplay.h
-    resultdisplay.cpp
+        main.cpp
+        mainwindow.cpp
+        mainwindow.h
+        mainwindow.ui
+        country.cpp
+        country.h
+        manufacturer.cpp
+        manufacturer.h
+        product.cpp
+        product.h
+        imagemanager.cpp
+        imagemanager.h
+        cameramanager.cpp
+        cameramanager.h
+        BarcodeReader.h
+        BarcodeDetectorOpenCV.h
+        CurvedBarcodeDetector.h
+        ImagePreprocessor.h
+        ZBarDecoder.h
+        SmartDecoder.h
+        BarcodeReader.cpp
+        BarcodeDetectorOpenCV.cpp
+        CurvedBarcodeDetector.cpp
+        ImagePreprocessor.cpp
+        ZBarDecoder.cpp
+        SmartDecoder.cpp
+        BarcodeResult.h
+        BarcodeDetectorOpenCV2D.h
+        BarcodeDetectorOpenCV2D.cpp
+        BarcodeReader2D.h
+        BarcodeReader2D.cpp
+        WebServer.h
+        WebServer.cpp
 )
 
 # =============================================================================
@@ -137,6 +121,7 @@ target_include_directories(BarcodeScanner PRIVATE
     ${ZBAR_INCLUDE_DIR}
     ${Qt6Core_INCLUDE_DIRS}
     ${Qt6Widgets_INCLUDE_DIRS}
+    ${Qt6Network_INCLUDE_DIRS}
 )
 
 # =============================================================================
@@ -146,6 +131,7 @@ target_include_directories(BarcodeScanner PRIVATE
 target_link_libraries(BarcodeScanner PRIVATE
     Qt6::Core
     Qt6::Widgets
+    Qt6::Network
     ${OpenCV_LIBS}
     "${ZBAR_LIBRARY}"
 )

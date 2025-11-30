@@ -2,61 +2,89 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QLabel>
-#include <QPushButton>
+#include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QPushButton>
+#include <QLabel>
 #include <QTextEdit>
 #include <QProgressBar>
-#include <QTimer>
+#include <QFileDialog>
+#include <QMessageBox>
+
 #include <opencv2/opencv.hpp>
-#include "barcodescanner.h"
+
+#include "cameramanager.h"
+#include "imagemanager.h"
+#include "BarcodeReader.h"
+#include "BarcodeReader2D.h"
+#include "BarcodeResult.h"
+#include "WebServer.h"
+
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
 private slots:
+    // --- кнопки ---
     void loadImage();
     void scanBarcode();
     void clearResults();
     void saveBarcode();
     void toggleCamera();
-    void updateCameraFrame();
-    void processBarcodeResult(const BarcodeReader::BarcodeResult& result);
+
+    // --- CameraManager ---
+    void onCameraFrameReady(const cv::Mat& frame);
+    void onCameraStarted();
+    void onCameraStopped();
+    void onCameraError(const QString& error);
+
+    // --- ImageManager ---
+    void onImageLoaded(const QString& filePath, const QSize& size);
+    void onImageCleared();
+    void onImageError(const QString& error);
 
 private:
-    void setupUI();
-    void displayImage(const cv::Mat& image);
+    // --- UI ---
+    QWidget* centralWidget;
+    QVBoxLayout* mainLayout;
+    QHBoxLayout* buttonLayout;
 
-    QWidget *centralWidget;
-    QVBoxLayout *mainLayout;
-    QHBoxLayout *buttonLayout;
+    QPushButton* loadButton;
+    QPushButton* scanButton;
+    QPushButton* clearButton;
+    QPushButton* saveButton;
+    QPushButton* cameraButton;
 
-    QPushButton *loadButton;
-    QPushButton *scanButton;
-    QPushButton *clearButton;
-    QPushButton *saveButton;
-    QPushButton *cameraButton;
+    QLabel* imageLabel;
+    QTextEdit* resultText;
+    QProgressBar* progressBar;
 
-    QLabel *imageLabel;
-    QTextEdit *resultText;
-    QProgressBar *progressBar;
+    // --- Менеджеры ---
+    CameraManager* cameraManager;
+    ImageManager* imageManager;
+    BarcodeReader barcodeReader;   // экземпляр BarcodeReader
+    BarcodeReader2D barcodeReader2D;
 
-    cv::Mat currentImage;
-    BarcodeReader barcodeReader;
-    bool imageLoaded;
+    // --- Последний результат ---
+    BarcodeResult lastResult;
     QString lastBarcodeResult;
 
-    QTimer *cameraTimer;
-    cv::VideoCapture *videoCapture;
-    bool cameraActive;
+    QPushButton* phoneButton;
+
+
+    // --- Методы ---
+    void setupUI();
+    void setupConnections();
+    void displayImage(const cv::Mat& image);
+    void updateScanButtonState();
+    void processBarcodeResult(const BarcodeResult& result);
+    void openPhoneDialog();
 };
 
 #endif // MAINWINDOW_H

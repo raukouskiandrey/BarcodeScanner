@@ -1,4 +1,4 @@
-#ifndef COUNTRY_H
+﻿#ifndef COUNTRY_H
 #define COUNTRY_H
 
 #include <QString>
@@ -17,6 +17,9 @@ public:
     QString getFullInfo() const;
 
     bool isValid() const;
+
+    // 📂 Новый метод: поиск страны по первым 2–3 цифрам штрих-кода
+    static QString findCountryByBarcode(const QString& barcode);
 };
 
 #endif // COUNTRY_H

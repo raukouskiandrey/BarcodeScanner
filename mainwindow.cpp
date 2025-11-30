@@ -1,23 +1,44 @@
 #include "mainwindow.h"
 #include <QApplication>
-
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), imageLoaded(false), cameraActive(false)
-{
-    setupUI();
-
-    cameraTimer = new QTimer(this);
-    videoCapture = nullptr;
-
-    connect(cameraTimer, &QTimer::timeout, this, &MainWindow::updateCameraFrame);
-}
+#include <QClipboard>
 
 MainWindow::~MainWindow()
 {
-    if (videoCapture) {
-        videoCapture->release();
-        delete videoCapture;
-    }
+    delete cameraManager;
+    delete imageManager;
+}
+
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent),
+    cameraManager(new CameraManager(this)),
+    imageManager(new ImageManager(this)),
+    barcodeReader()   // инициализация BarcodeReader
+{
+    setupUI();
+    setupConnections();
+    updateScanButtonState();
+}
+
+void MainWindow::setupConnections()
+{
+    // CameraManager
+    connect(cameraManager, &CameraManager::frameReady, this, &MainWindow::onCameraFrameReady);
+    connect(cameraManager, &CameraManager::cameraStarted, this, &MainWindow::onCameraStarted);
+    connect(cameraManager, &CameraManager::cameraStopped, this, &MainWindow::onCameraStopped);
+    connect(cameraManager, &CameraManager::cameraError, this, &MainWindow::onCameraError);
+
+    // ImageManager
+    connect(imageManager, &ImageManager::imageLoaded, this, &MainWindow::onImageLoaded);
+    connect(imageManager, &ImageManager::imageCleared, this, &MainWindow::onImageCleared);
+    connect(imageManager, &ImageManager::imageError, this, &MainWindow::onImageError);
+
+    // Buttons
+    connect(loadButton, &QPushButton::clicked, this, &MainWindow::loadImage);
+    connect(scanButton, &QPushButton::clicked, this, &MainWindow::scanBarcode);
+    connect(clearButton, &QPushButton::clicked, this, &MainWindow::clearResults);
+    connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveBarcode);
+    connect(cameraButton, &QPushButton::clicked, this, &MainWindow::toggleCamera);
+    connect(phoneButton, &QPushButton::clicked, this, &MainWindow::openPhoneDialog);
 }
 
 void MainWindow::setupUI()
@@ -28,23 +49,23 @@ void MainWindow::setupUI()
     mainLayout = new QVBoxLayout(centralWidget);
     buttonLayout = new QHBoxLayout();
 
-    // Создание кнопок
-    loadButton = new QPushButton("📁 Загрузить изображение", this);
-    scanButton = new QPushButton("🔍 Сканировать", this);
-    clearButton = new QPushButton("🗑️ Очистить", this);
-    saveButton = new QPushButton("💾 Сохранить", this);
+    loadButton   = new QPushButton("📁 Загрузить изображение", this);
+    scanButton   = new QPushButton("🔍 Сканировать", this);
+    clearButton  = new QPushButton("🗑️ Очистить", this);
+    saveButton   = new QPushButton("💾 Сохранить", this);
     cameraButton = new QPushButton("📷 Включить камеру", this);
+    phoneButton = new QPushButton("📱 Загрузить с телефона", this);
 
+    scanButton->setEnabled(false);
     saveButton->setEnabled(false);
 
-    // Добавление кнопок в горизонтальный layout
     buttonLayout->addWidget(loadButton);
     buttonLayout->addWidget(scanButton);
     buttonLayout->addWidget(clearButton);
     buttonLayout->addWidget(saveButton);
     buttonLayout->addWidget(cameraButton);
+    buttonLayout->addWidget(phoneButton);
 
-    // Создание остальных элементов интерфейса
     imageLabel = new QLabel("Изображение не загружено", this);
     imageLabel->setAlignment(Qt::AlignCenter);
     imageLabel->setMinimumSize(400, 300);
@@ -57,18 +78,10 @@ void MainWindow::setupUI()
     progressBar = new QProgressBar(this);
     progressBar->setVisible(false);
 
-    // Добавление элементов в основной layout
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(imageLabel);
     mainLayout->addWidget(resultText);
     mainLayout->addWidget(progressBar);
-
-    // Подключение сигналов к слотам
-    connect(loadButton, &QPushButton::clicked, this, &MainWindow::loadImage);
-    connect(scanButton, &QPushButton::clicked, this, &MainWindow::scanBarcode);
-    connect(clearButton, &QPushButton::clicked, this, &MainWindow::clearResults);
-    connect(saveButton, &QPushButton::clicked, this, &MainWindow::saveBarcode);
-    connect(cameraButton, &QPushButton::clicked, this, &MainWindow::toggleCamera);
 
     setWindowTitle("Barcode Scanner v2.0 - Считывание с камеры");
     resize(800, 600);
@@ -82,35 +95,41 @@ void MainWindow::loadImage()
                                                     "Images (*.png *.jpg *.jpeg *.bmp *.tiff)");
 
     if (!filename.isEmpty()) {
-        currentImage = cv::imread(filename.toStdString());
-        if (!currentImage.empty()) {
-            displayImage(currentImage);
-            imageLoaded = true;
-            resultText->append("✅ Изображение загружено: " + filename);
-            resultText->append("📏 Размер: " + QString::number(currentImage.cols) + "x" + QString::number(currentImage.rows));
-        } else {
-            QMessageBox::warning(this, "Ошибка", "Не удалось загрузить изображение");
+        if (cameraManager->isCameraActive()) {
+            cameraManager->stopCamera();
+        }
+        if (!imageManager->loadImage(filename)) {
+            return;
         }
     }
 }
 
 void MainWindow::scanBarcode()
 {
-    if (!imageLoaded && !cameraActive) {
+    if (!imageManager->hasImage() && !cameraManager->isCameraActive()) {
         QMessageBox::warning(this, "Ошибка", "Сначала загрузите изображение или включите камеру");
         return;
     }
 
     progressBar->setVisible(true);
-    progressBar->setRange(0, 0); // Индикатор прогресса без определенного конца
+    progressBar->setRange(0, 0);
 
-    // Если камера активна, используем текущий кадр
-    cv::Mat imageToScan = cameraActive ? currentImage.clone() : currentImage;
+    cv::Mat imageToScan;
+    if (cameraManager->isCameraActive()) {
+        imageToScan = cameraManager->getCurrentFrame();
+    } else {
+        imageToScan = imageManager->getCurrentImage();
+    }
 
     resultText->append("🔍 Начинаю сканирование...");
 
-    // Запускаем сканирование
-    BarcodeReader::BarcodeResult result = barcodeReader.decode(imageToScan);
+    // --- сначала пробуем 1D ---
+    BarcodeResult result = barcodeReader.decode(imageToScan);
+
+    // --- если не удалось, пробуем 2D ---
+    if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
+        result = barcodeReader2D.decode(imageToScan);
+    }
 
     processBarcodeResult(result);
 
@@ -122,64 +141,123 @@ void MainWindow::clearResults()
     resultText->clear();
     imageLabel->clear();
     imageLabel->setText("Изображение не загружено");
-    imageLoaded = false;
-    saveButton->setEnabled(false);
 
-    // Останавливаем камеру при очистке
-    if (cameraActive) {
-        toggleCamera();
-    }
+    imageManager->clearImage();
+    cameraManager->stopCamera();
+
+    lastBarcodeResult.clear();
+    lastResult = BarcodeResult();   // сброс структуры
+
+    saveButton->setEnabled(false);
+    updateScanButtonState();
 }
 
 void MainWindow::saveBarcode()
 {
     if (!lastBarcodeResult.isEmpty()) {
-        BarcodeReader::saveToFile(lastBarcodeResult.toStdString());
+        if (lastResult.type == "QR/DataMatrix" || lastResult.type == "QR-Code") {
+            barcodeReader2D.saveToFile(lastResult);
+        } else {
+            barcodeReader.saveToFile(lastResult);
+        }
         resultText->append("✅ Результат сохранен в файл!");
     }
 }
 
+
 void MainWindow::toggleCamera()
 {
-    if (!cameraActive) {
-        // Включение камеры
-        videoCapture = new cv::VideoCapture(0);
+    if (!cameraManager->isCameraActive()) {
+        resultText->append("🔄 Попытка подключения к камере...");
+        imageManager->clearImage();
 
-        if (!videoCapture->isOpened()) {
-            QMessageBox::warning(this, "Ошибка", "Не удалось открыть камеру");
-            delete videoCapture;
-            videoCapture = nullptr;
+        if (!cameraManager->startCamera()) {
             return;
         }
-
-        cameraActive = true;
-        cameraButton->setText("📷 Выключить камеру");
-        cameraTimer->start(33); // ~30 FPS
-        resultText->append("📷 Камера включена. Наведите на штрих-код...");
-        resultText->append("💡 Камера автоматически сканирует штрих-коды");
-
     } else {
-        // Выключение камеры
-        cameraTimer->stop();
-        if (videoCapture) {
-            videoCapture->release();
-            delete videoCapture;
-            videoCapture = nullptr;
-        }
-        cameraActive = false;
-        cameraButton->setText("📷 Включить камеру");
-        resultText->append("📷 Камера выключена");
+        cameraManager->stopCamera();
     }
 }
 
+// --- CameraManager slots ---
+void MainWindow::onCameraFrameReady(const cv::Mat& frame)
+{
+    displayImage(frame);
+
+    static int frameCounter = 0;
+    frameCounter++;
+
+    if (frameCounter % 10 == 0) {
+        // --- сначала пробуем 1D ---
+        BarcodeResult result = barcodeReader.decode(frame);
+
+        // --- если не удалось, пробуем 2D ---
+        if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
+            result = barcodeReader2D.decode(frame);
+        }
+
+        if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
+            QString newBarcode = QString::fromStdString(result.type) + " " + QString::fromStdString(result.digits);
+            if (newBarcode != lastBarcodeResult) {
+                processBarcodeResult(result);
+                frameCounter = 0;
+            }
+        }
+    }
+}
+
+void MainWindow::onCameraStarted()
+{
+    cameraButton->setText("📷 Выключить камеру");
+    resultText->append("✅ Камера успешно подключена!");
+    resultText->append("📷 Камера включена. Наведите на штрих-код...");
+    updateScanButtonState();
+}
+
+void MainWindow::onCameraStopped()
+{
+    cameraButton->setText("📷 Включить камеру");
+    resultText->append("📷 Камера выключена");
+    updateScanButtonState();
+}
+
+void MainWindow::onCameraError(const QString& error)
+{
+    QMessageBox::warning(this, "Ошибка камеры", error);
+    cameraButton->setText("📷 Включить камеру");
+    updateScanButtonState();
+}
+
+// --- ImageManager slots ---
+void MainWindow::onImageLoaded(const QString& filePath, const QSize& size)
+{
+    displayImage(imageManager->getCurrentImage());
+    resultText->append("✅ Изображение загружено: " + filePath);
+    resultText->append("📏 Размер: " + QString::number(size.width()) + "x" + QString::number(size.height()));
+    updateScanButtonState();
+}
+
+void MainWindow::onImageCleared()
+{
+    imageLabel->clear();
+    imageLabel->setText("Изображение не загружено");
+    updateScanButtonState();
+}
+
+void MainWindow::onImageError(const QString& error)
+{
+    QMessageBox::warning(this, "Ошибка изображения", error);
+}
+
+// --- Общие методы ---
 void MainWindow::displayImage(const cv::Mat& image)
 {
-    cv::Mat displayImage;
-    if (image.channels() == 3) {
-        cv::cvtColor(image, displayImage, cv::COLOR_BGR2RGB);
-    } else {
-        cv::cvtColor(image, displayImage, cv::COLOR_GRAY2RGB);
+    if (image.empty()) {
+        imageLabel->setText("Изображение не доступно");
+        return;
     }
+
+    cv::Mat displayImage = imageManager->convertToDisplayFormat(image);
 
     QImage qimage(displayImage.data,
                   displayImage.cols,
@@ -196,7 +274,25 @@ void MainWindow::displayImage(const cv::Mat& image)
     imageLabel->setPixmap(pixmap);
 }
 
-void MainWindow::processBarcodeResult(const BarcodeReader::BarcodeResult& result)
+void MainWindow::updateScanButtonState()
+{
+    bool canScan = imageManager->hasImage() || cameraManager->isCameraActive();
+    scanButton->setEnabled(canScan);
+
+    if (!canScan) {
+        scanButton->setToolTip("Сначала загрузите изображение или включите камеру");
+    } else {
+        scanButton->setToolTip("Начать сканирование штрих-кода");
+    }
+
+    if (cameraManager->isCameraActive()) {
+        cameraButton->setText("📷 Выключить камеру");
+    } else {
+        cameraButton->setText("📷 Включить камеру");
+    }
+}
+
+void MainWindow::processBarcodeResult(const BarcodeResult& result)
 {
     resultText->append("\n🎯 === РЕЗУЛЬТАТ СКАНИРОВАНИЯ ===");
     resultText->append("📊 Тип: " + QString::fromStdString(result.type));
@@ -205,67 +301,96 @@ void MainWindow::processBarcodeResult(const BarcodeReader::BarcodeResult& result
     if (!result.country.empty() && result.country != "Неизвестно") {
         resultText->append("🌍 Страна: " + QString::fromStdString(result.country));
     }
-
-    if (!result.manufacturerCode.empty() && result.manufacturerCode != "Н/Д" && result.manufacturerCode != "Нет") {
+    if (!result.manufacturerCode.empty() &&
+        result.manufacturerCode != "Н/Д" &&
+        result.manufacturerCode != "Нет") {
         resultText->append("🏭 Код производителя: " + QString::fromStdString(result.manufacturerCode));
     }
-
-    if (!result.productCode.empty() && result.productCode != "Н/Д") {
-        resultText->append("📦 Код товара: " + QString::fromStdString(result.productCode));
+    // Для 1D штрих-кодов выводим код товара, для 2D — нет
+    if (result.type != "QR/DataMatrix" && result.type != "QR-Code") {
+        if (!result.productCode.empty() && result.productCode != "Н/Д") {
+            resultText->append("📦 Код товара: " + QString::fromStdString(result.productCode));
+        }
     }
 
+
+    // сохраняем объект для последующего вызова saveToFile
+    lastResult = result;
     lastBarcodeResult = QString::fromStdString(result.type) + " " +
                         QString::fromStdString(result.digits);
 
     if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
         resultText->append("✅ Штрих-код успешно распознан!");
         saveButton->setEnabled(true);
-
-        // Автоматически сохраняем при обнаружении с камеры
-        if (cameraActive) {
-            QTimer::singleShot(1000, this, [this]() {
-                saveBarcode();
-                resultText->append("💾 Автоматически сохранено в файл");
-            });
-        }
     } else {
         resultText->append("❌ Не удалось распознать штрих-код");
         saveButton->setEnabled(false);
     }
 }
 
-void MainWindow::updateCameraFrame()
+void MainWindow::openPhoneDialog()
 {
-    if (videoCapture && videoCapture->isOpened()) {
-        cv::Mat frame;
-        *videoCapture >> frame;
+    QDialog dialog(this);
+    dialog.setWindowTitle("📱 Загрузка с телефона");
 
-        if (!frame.empty()) {
-            // 🔄 УБИРАЕМ ЗЕРКАЛЬНОЕ ОТОБРАЖЕНИЕ - переворачиваем по горизонтали
-            cv::flip(frame, frame, 1); // 1 - горизонтальное отражение
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    QPushButton* startBtn = new QPushButton("🚀 Запустить веб-сервер", &dialog);
+    QPushButton* stopBtn  = new QPushButton("⛔ Выключить веб-сервер", &dialog); // 🔴 новая кнопка
+    QPushButton* copyBtn  = new QPushButton("📋 Скопировать адрес", &dialog);
+    QLabel* statusLabel   = new QLabel("Сервер не запущен", &dialog);
 
-            currentImage = frame.clone();
-            displayImage(frame);
+    WebServer* server = new WebServer(&dialog);
 
-            // 🔥 АВТОМАТИЧЕСКОЕ СКАНИРОВАНИЕ ПРИ АКТИВНОЙ КАМЕРЕ
-            // Сканируем каждый кадр, но ограничиваем частоту чтобы не нагружать процессор
-            static int frameCounter = 0;
-            frameCounter++;
+    layout->addWidget(startBtn);
+    layout->addWidget(stopBtn);
+    layout->addWidget(statusLabel);
+    layout->addWidget(copyBtn);
 
-            // Сканируем каждый 10-й кадр (примерно 3 раза в секунду)
-            if (frameCounter % 10 == 0) {
-                BarcodeReader::BarcodeResult result = barcodeReader.decode(frame);
-                if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
-                    // Проверяем, не тот же ли самый штрих-код уже был распознан
-                    QString newBarcode = QString::fromStdString(result.type) + " " + QString::fromStdString(result.digits);
-                    if (newBarcode != lastBarcodeResult) {
-                        processBarcodeResult(result);
+    copyBtn->setEnabled(false);
+    stopBtn->setEnabled(false); // выключать можно только если сервер запущен
 
-                        // Добавляем небольшую задержку перед следующим сканированием
-                        frameCounter = 0; // Сбрасываем счетчик
-                    }
-                }
-            }
+    connect(startBtn, &QPushButton::clicked, [&]() {
+        if (server->startServer(8080)) {
+            statusLabel->setText("✅ Сервер запущен: " + server->serverAddress());
+            copyBtn->setEnabled(true);
+            stopBtn->setEnabled(true);
         }
-    }
+    });
+
+    connect(stopBtn, &QPushButton::clicked, [&]() {
+        server->stopServer();
+        statusLabel->setText("⛔ Сервер остановлен");
+        copyBtn->setEnabled(false);
+        stopBtn->setEnabled(false);
+    });
+
+    connect(copyBtn, &QPushButton::clicked, [&]() {
+        QApplication::clipboard()->setText(server->serverAddress());
+        QMessageBox::information(&dialog, "Скопировано", "Адрес скопирован!");
+    });
+
+    connect(server, &WebServer::fileSaved, this, [&](const QString& path) {
+        resultText->append("📂 Файл сохранён: " + path);
+
+        // Загружаем картинку через OpenCV
+        cv::Mat mat = cv::imread(path.toStdString());
+        if (!mat.empty()) {
+            displayImage(mat);  // твоя функция уже умеет показывать в imageLabel
+        } else {
+            resultText->append("❌ Ошибка: OpenCV не смог загрузить изображение");
+        }
+
+        // --- Распознавание штрих-кода ---
+        BarcodeResult result = barcodeReader.decode(path.toStdString());
+        if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
+            result = barcodeReader2D.decode(path.toStdString());
+        }
+        processBarcodeResult(result);
+    });
+
+
+
+    dialog.exec();
 }
+
+

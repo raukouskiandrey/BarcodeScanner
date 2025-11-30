@@ -1,12 +1,59 @@
-#include "barcoderegionfinder.h"
-#include <algorithm>
+#include "CurvedBarcodeDetector.h"
+#include <iostream>
 
-BarcodeRegionFinder::BarcodeRegionFinder()
-{
+std::vector<cv::Rect> CurvedBarcodeDetector::detectCurvedBarcodesOptimized(const cv::Mat& frame) {
+    std::vector<cv::Rect> curved_regions;
+
+    cv::Mat small_frame;
+    cv::resize(frame, small_frame, cv::Size(320, 240));
+
+    cv::Mat gray;
+    cv::cvtColor(small_frame, gray, cv::COLOR_BGR2GRAY);
+
+    std::vector<cv::Mat> binary_images;
+
+    cv::Mat binary1, binary2, binary3;
+    cv::adaptiveThreshold(gray, binary1, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv::THRESH_BINARY, 21, 5);
+    cv::adaptiveThreshold(gray, binary2, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv::THRESH_BINARY, 31, 10);
+    cv::threshold(gray, binary3, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+    binary_images.push_back(binary1);
+    binary_images.push_back(binary2);
+    binary_images.push_back(binary3);
+
+    cv::Mat grad_x, grad_y;
+    cv::Sobel(gray, grad_x, CV_16S, 1, 0, 3);
+    cv::Sobel(gray, grad_y, CV_16S, 0, 1, 3);
+    cv::convertScaleAbs(grad_x, grad_x);
+    cv::convertScaleAbs(grad_y, grad_y);
+    cv::Mat gradients;
+    cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, gradients);
+    cv::threshold(gradients, gradients, 50, 255, cv::THRESH_BINARY);
+    binary_images.push_back(gradients);
+
+    for (const auto& binary : binary_images) {
+        std::vector<cv::Rect> contour_regions = extractRegionsFromContours(binary, small_frame.size());
+        curved_regions.insert(curved_regions.end(), contour_regions.begin(), contour_regions.end());
+    }
+
+    curved_regions = removeDuplicateRegions(curved_regions);
+
+    double scale_x = (double)frame.cols / small_frame.cols;
+    double scale_y = (double)frame.rows / small_frame.rows;
+
+    for (auto& bbox : curved_regions) {
+        bbox.x = (int)(bbox.x * scale_x);
+        bbox.y = (int)(bbox.y * scale_y);
+        bbox.width = (int)(bbox.width * scale_x);
+        bbox.height = (int)(bbox.height * scale_y);
+    }
+
+    return curved_regions;
 }
 
-std::vector<cv::Rect> BarcodeRegionFinder::extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size)
-{
+std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size) {
     std::vector<cv::Rect> regions;
 
     cv::Mat morph;
@@ -35,9 +82,8 @@ std::vector<cv::Rect> BarcodeRegionFinder::extractRegionsFromContours(const cv::
     return regions;
 }
 
-bool BarcodeRegionFinder::isValidBarcodeRegionExtended(const cv::Rect& rect, const cv::Size& image_size,
-                                                       const std::vector<cv::Point>& contour)
-{
+bool CurvedBarcodeDetector::isValidBarcodeRegionExtended(const cv::Rect& rect, const cv::Size& image_size,
+    const std::vector<cv::Point>& contour) {
     if (rect.width < 30 || rect.height < 10) return false;
     if (rect.width > image_size.width * 0.7 || rect.height > image_size.height * 0.7) return false;
 
@@ -54,8 +100,7 @@ bool BarcodeRegionFinder::isValidBarcodeRegionExtended(const cv::Rect& rect, con
     return valid_aspect && valid_contour;
 }
 
-cv::Rect BarcodeRegionFinder::expandBarcodeRegion(const cv::Rect& original, const cv::Size& image_size)
-{
+cv::Rect CurvedBarcodeDetector::expandBarcodeRegion(const cv::Rect& original, const cv::Size& image_size) {
     int expand_x = original.width * 0.2;
     int expand_y = original.height * 0.3;
 
@@ -68,8 +113,7 @@ cv::Rect BarcodeRegionFinder::expandBarcodeRegion(const cv::Rect& original, cons
     return expanded;
 }
 
-std::vector<cv::Rect> BarcodeRegionFinder::removeDuplicateRegions(const std::vector<cv::Rect>& regions)
-{
+std::vector<cv::Rect> CurvedBarcodeDetector::removeDuplicateRegions(const std::vector<cv::Rect>& regions) {
     std::vector<cv::Rect> unique_regions;
 
     for (const auto& rect : regions) {
@@ -93,8 +137,7 @@ std::vector<cv::Rect> BarcodeRegionFinder::removeDuplicateRegions(const std::vec
     return unique_regions;
 }
 
-bool BarcodeRegionFinder::hasBarcodeTextureAdvanced(const cv::Mat& region)
-{
+bool CurvedBarcodeDetector::hasBarcodeTextureAdvanced(const cv::Mat& region) {
     if (region.empty() || region.rows < 5 || region.cols < 5) return false;
 
     cv::Mat gray = region;
