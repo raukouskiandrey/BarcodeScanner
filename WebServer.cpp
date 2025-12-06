@@ -65,27 +65,57 @@ bool WebServer::isRunning() const
     return running;
 }
 
+// В WebServer.cpp
 void WebServer::onNewConnection()
 {
     clientSocket = tcpServer->nextPendingConnection();
+    requestBuffer.clear();
+    expectedLength = -1;
+
     connect(clientSocket, &QTcpSocket::readyRead,
             this, &WebServer::onReadyRead);
+    connect(clientSocket, &QTcpSocket::disconnected,
+            clientSocket, &QTcpSocket::deleteLater);
 }
 
 void WebServer::onReadyRead()
 {
     if (!clientSocket) return;
 
-    QByteArray requestData = clientSocket->readAll();
+    // Накапливаем данные
+    requestBuffer.append(clientSocket->readAll());
 
-    // Определяем метод
-    const bool isGet  = requestData.startsWith("GET ");
-    const bool isPost = requestData.startsWith("POST ");
+    // Если Content-Length ещё не извлечён — пробуем найти его
+    if (expectedLength == -1) {
+        int pos = requestBuffer.indexOf("Content-Length:");
+        if (pos != -1) {
+            int end = requestBuffer.indexOf("\r\n", pos);
+            if (end != -1) {
+                QByteArray lenLine = requestBuffer.mid(pos, end - pos);
+                QList<QByteArray> parts = lenLine.split(' ');
+                if (parts.size() >= 2) {
+                    expectedLength = parts.last().toLongLong();
+                }
+            }
+        }
+    }
+
+    // Проверяем: получили ли мы всё тело запроса
+    int headerEnd = requestBuffer.indexOf("\r\n\r\n");
+    if (headerEnd == -1) return; // заголовки ещё не полностью пришли
+
+    qint64 bodySize = requestBuffer.size() - (headerEnd + 4);
+    if (expectedLength != -1 && bodySize < expectedLength) {
+        return; // ждём оставшиеся байты
+    }
+
+    // --- Теперь у нас полный запрос ---
+    const bool isGet  = requestBuffer.startsWith("GET ");
+    const bool isPost = requestBuffer.startsWith("POST ");
 
     QByteArray response;
 
     if (isGet) {
-        // Отдаём HTML‑страницу с формой загрузки
         QByteArray body = buildUploadPage();
         response = "HTTP/1.1 200 OK\r\n"
                    "Content-Type: text/html; charset=UTF-8\r\n"
@@ -94,64 +124,36 @@ void WebServer::onReadyRead()
                    body;
     }
     else if (isPost) {
-        // Проверяем, что это multipart/form-data
-        if (!requestData.contains("Content-Type: multipart/form-data")) {
-            QByteArray body = badRequestPage("Ожидается multipart/form-data");
-            response = "HTTP/1.1 400 Bad Request\r\n"
+        QByteArray fileContent;
+        if (extractMultipartBody(requestBuffer, fileContent)) {
+            QString uploadDir = QDir::currentPath() + "/uploads";
+            QDir().mkpath(uploadDir);
+
+            QString savedPath = uploadDir + "/uploaded_" +
+                                QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
+                                ".jpg";
+
+            QFile out(savedPath);
+            if (out.open(QIODevice::WriteOnly)) {
+                out.write(fileContent);
+                out.close();
+                emit fileSaved(savedPath);
+            }
+
+            QByteArray body = okPage();
+            response = "HTTP/1.1 200 OK\r\n"
                        "Content-Type: text/html; charset=UTF-8\r\n"
                        "Connection: close\r\n"
                        "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" +
                        body;
         } else {
-            QByteArray fileContent;
-            if (extractMultipartBody(requestData, fileContent)) {
-                // --- Сохраняем файл ---
-                QString uploadDir = QDir::currentPath() + "/uploads";
-                if (!QDir().mkpath(uploadDir)) {
-                    emit serverError("❌ Не удалось создать папку: " + uploadDir);
-                } else {
-                    // Уникальное имя файла по времени
-                    QString savedPath = uploadDir + "/uploaded_" +
-                                        QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
-                                        ".jpg"; // можно заменить на .png
-
-                    QFile out(savedPath);
-                    if (!out.open(QIODevice::WriteOnly)) {
-                        emit serverError("❌ Не удалось открыть файл для записи: " + savedPath);
-                    } else {
-                        out.write(fileContent);
-                        out.close();
-
-                        // Уведомляем MainWindow
-                        emit fileSaved(savedPath);
-                    }
-                }
-
-                // --- Ответ клиенту ---
-                QByteArray body = okPage();
-                response = "HTTP/1.1 200 OK\r\n"
-                           "Content-Type: text/html; charset=UTF-8\r\n"
-                           "Connection: close\r\n"
-                           "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" +
-                           body;
-            } else {
-                QByteArray body = badRequestPage("Не удалось извлечь файл из запроса");
-                response = "HTTP/1.1 400 Bad Request\r\n"
-                           "Content-Type: text/html; charset=UTF-8\r\n"
-                           "Connection: close\r\n"
-                           "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" +
-                           body;
-            }
+            QByteArray body = badRequestPage("Не удалось извлечь файл");
+            response = "HTTP/1.1 400 Bad Request\r\n"
+                       "Content-Type: text/html; charset=UTF-8\r\n"
+                       "Connection: close\r\n"
+                       "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" +
+                       body;
         }
-    }
-    else {
-        // Метод не поддерживается
-        QByteArray body = badRequestPage("Метод не поддерживается");
-        response = "HTTP/1.1 405 Method Not Allowed\r\n"
-                   "Content-Type: text/html; charset=UTF-8\r\n"
-                   "Connection: close\r\n"
-                   "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" +
-                   body;
     }
 
     clientSocket->write(response);

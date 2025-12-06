@@ -2,7 +2,8 @@
 #pragma once
 #include <string>
 
-struct BarcodeResult {
+class BarcodeResult {
+public:
     std::string type;
     std::string digits;
     std::string fullResult;

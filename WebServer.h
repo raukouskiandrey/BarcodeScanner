@@ -42,6 +42,10 @@ private:
     QTcpSocket* clientSocket;
     QString address;
     bool running;
+
+private:
+    QByteArray requestBuffer;
+    qint64 expectedLength = -1;
 };
 
 #endif // WEBSERVER_H
