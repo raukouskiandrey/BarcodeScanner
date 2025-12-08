@@ -8,18 +8,20 @@
 #include "SmartDecoder.h"
 #include "BarcodeResult.h"
 #include "Country.h"
+#include "AbstractDecoder.h"
 
-class BarcodeReader {
+class BarcodeReader : public AbstractDecoder {
 public:
     BarcodeReader();
     ~BarcodeReader();
 
-    BarcodeResult decode(const cv::Mat& image);
-    BarcodeResult decode(const std::string& filename);
-    BarcodeResult advancedDecode(const cv::Mat& image);
+    BarcodeResult decode(const cv::Mat& image) override;
+    BarcodeResult decode(const std::string& filename) override;
+    std::string getDecoderName() const override { return "BarcodeReader"; }
 
+    BarcodeResult advancedDecode(const cv::Mat& image);
     BarcodeResult createDetailedResult(const BarcodeResult& basicResult);
-    void saveToFile(const BarcodeResult& result);
+    void saveToFile(const BarcodeResult& result) override;
 
 private:
     BarcodeDetectorOpenCV opencvDetector;

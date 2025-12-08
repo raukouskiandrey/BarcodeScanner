@@ -1,5 +1,6 @@
 #include "cameramanager.h"
 #include <QDebug>
+#include "CameraException.h"
 
 CameraManager::CameraManager(QObject* parent)
     : QObject(parent), videoCapture(nullptr), cameraActive(false), mirrorMode(true)
@@ -13,25 +14,19 @@ CameraManager::~CameraManager()
     stopCamera();
 }
 
-bool CameraManager::startCamera(int cameraIndex)
-{
-    if (cameraActive) {
-        return true;
-    }
+bool CameraManager::startCamera(int cameraIndex) {
+    if (cameraActive) return true;
 
-    // Пробуем разные бэкенды в порядке приоритета
     if (tryOpenCameraWithBackend(cameraIndex, cv::CAP_DSHOW) ||
         tryOpenCameraWithBackend(cameraIndex, cv::CAP_MSMF) ||
         tryOpenCameraWithBackend(cameraIndex, cv::CAP_ANY)) {
-
         cameraActive = true;
-        frameTimer->start(33); // ~30 FPS
+        frameTimer->start(33);
         emit cameraStarted();
         return true;
     }
 
-    emit cameraError("Не удалось подключиться к камере");
-    return false;
+    throw CameraException("Не удалось подключиться к камере");
 }
 
 bool CameraManager::tryOpenCameraWithBackend(int cameraIndex, int backend)

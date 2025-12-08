@@ -1,4 +1,7 @@
 #include "BarcodeReader2D.h"
+#include "ImageLoadException.h"
+#include "DecodeException.h"
+#include "FileException.h"
 #include <iostream>
 #include <fstream>
 
@@ -6,31 +9,22 @@ BarcodeReader2D::BarcodeReader2D() {}
 BarcodeReader2D::~BarcodeReader2D() {}
 
 BarcodeResult BarcodeReader2D::decode(const cv::Mat& image) {
-    BarcodeResult result;
-    result.type = "2D";
-    result.digits = "";
-
     if (image.empty()) {
-        result.type = "Ошибка";
-        result.digits = "Пустое изображение";
-        return result;
+        throw DecodeException("Пустое изображение для декодирования (2D)");
     }
 
     auto decodedList = opencv2DDetector.detectAndDecode(image);
-    if (!decodedList.empty()) {
-        result = createDetailedResult(decodedList[0]);
+    if (decodedList.empty()) {
+        throw DecodeException("Не удалось распознать 2D штрих-код");
     }
 
-    return result;
+    return createDetailedResult(decodedList[0]);
 }
 
 BarcodeResult BarcodeReader2D::decode(const std::string& filename) {
     cv::Mat image = cv::imread(filename);
     if (image.empty()) {
-        BarcodeResult result;
-        result.type = "Ошибка";
-        result.digits = "Не удалось загрузить изображение";
-        return result;
+        throw ImageLoadException(filename);
     }
     return decode(image);
 }
@@ -41,7 +35,6 @@ BarcodeResult BarcodeReader2D::createDetailedResult(const std::string& rawData) 
     result.digits = rawData;
     result.fullResult = rawData;
 
-    // Здесь можно добавить парсинг: например, если QR содержит URL или JSON
     if (rawData.find("http") == 0) {
         result.productCode = "Ссылка";
     } else {
@@ -55,21 +48,18 @@ BarcodeResult BarcodeReader2D::createDetailedResult(const std::string& rawData) 
     return result;
 }
 
-void BarcodeReader2D::saveToFile(const BarcodeResult& result)
-{
-    const std::string filename = "C:/Users/rauko/Desktop/Barcode_All.txt";  // фиксированное имя файла
+void BarcodeReader2D::saveToFile(const BarcodeResult& result) {
+    const std::string filename = "C:/Users/rauko/Desktop/Barcode_All.txt";
 
-    std::ofstream file(filename, std::ios::app); // открываем в режиме добавления
+    std::ofstream file(filename, std::ios::app);
     if (!file.is_open()) {
-        std::cerr << "Ошибка: не удалось открыть файл для сохранения: " << filename << std::endl;
-        return;
+        throw FileException("Не удалось открыть файл для сохранения: " + filename);
     }
 
     file << "=== Результат сканирования 2D ===" << std::endl;
     file << "Тип: " << result.type << std::endl;
     file << "Полный код: " << result.digits << std::endl;
 
-    // Для QR/DataMatrix сохраняем только интерпретацию (например, "Ссылка" или "Данные")
     if (!result.productCode.empty() && result.productCode != "Н/Д") {
         file << "Интерпретация: " << result.productCode << std::endl;
     }

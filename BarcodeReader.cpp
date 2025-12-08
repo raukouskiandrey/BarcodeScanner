@@ -5,6 +5,10 @@
 #include <iostream>
 #include <fstream>
 
+#include "ImageLoadException.h"
+#include "DecodeException.h"
+#include "FileException.h"
+
 BarcodeReader::BarcodeReader()
     : smartDecoder(preprocessor, zbarDecoder) { // Правильная инициализация SmartDecoder
     // настройка ZBar и загрузка данных
@@ -21,13 +25,11 @@ BarcodeResult BarcodeReader::decode(const cv::Mat& image) {
 BarcodeResult BarcodeReader::decode(const std::string& filename) {
     cv::Mat image = cv::imread(filename);
     if (image.empty()) {
-        BarcodeResult result;
-        result.type = "Ошибка";
-        result.digits = "Не удалось загрузить изображение";
-        return result;
+        throw ImageLoadException(filename); // выбрасываем исключение вместо возврата "Ошибка"
     }
     return advancedDecode(image);
 }
+
 
 BarcodeResult BarcodeReader::advancedDecode(const cv::Mat& image) {
 
@@ -35,9 +37,7 @@ BarcodeResult BarcodeReader::advancedDecode(const cv::Mat& image) {
     result.type = "Неизвестно";
 
     if (image.empty()) {
-        result.type = "Ошибка";
-        result.digits = "Пустое изображение";
-        return result;
+        throw DecodeException("Пустое изображение для декодирования");
     }
 
     std::cout << "=== НАЧАЛО СКАНИРОВАНИЯ ===" << std::endl;
@@ -68,7 +68,7 @@ BarcodeResult BarcodeReader::advancedDecode(const cv::Mat& image) {
     }
 
     // 2. СЛОЖНЫЕ ШТРИХ-КОДЫ
-    std::vector<cv::Rect> curved_regions = curvedDetector.detectCurvedBarcodesOptimized(frame);
+    auto curved_regions = curvedDetector.detectCurvedBarcodesOptimized(frame);
     std::cout << "Обнаружено изогнутых регионов: " << curved_regions.size() << std::endl;
 
     for (const auto& rect : curved_regions) {
@@ -97,7 +97,7 @@ BarcodeResult BarcodeReader::advancedDecode(const cv::Mat& image) {
     }
 
     std::cout << "=== СКАНИРОВАНИЕ ЗАВЕРШЕНО, ШТРИХ-КОД НЕ РАСПОЗНАН ===" << std::endl;
-    return result;
+    throw DecodeException("Штрих-код не распознан");
 }
 
 BarcodeResult BarcodeReader::createDetailedResult(const BarcodeResult& basicResult) {
@@ -105,11 +105,17 @@ BarcodeResult BarcodeReader::createDetailedResult(const BarcodeResult& basicResu
 
     QString fullBarcode = QString::fromStdString(basicResult.digits);
 
-    // Получаем названия напрямую из статических методов
-    QString productName = Product::findProductByBarcode(fullBarcode);
-    if (!productName.isEmpty()) {
-        detailedResult.productCode = productName.toStdString();
-        std::cout << "Найден товар по штрих-коду: " << productName.toStdString() << std::endl;
+    // --- Поиск товара ---
+    try {
+        QString productName = Product::findProductByBarcode(fullBarcode);
+        if (!productName.isEmpty()) {
+            detailedResult.productCode = productName.toStdString();
+            std::cout << "Найден товар по штрих-коду: " << productName.toStdString() << std::endl;
+        }
+    }
+    catch (const FileException& e) {
+        std::cerr << e.what() << std::endl;
+        detailedResult.productCode = "Ошибка чтения файла товаров";
     }
 
     if ((basicResult.type == "EAN-13" || basicResult.type == "UPCA") && basicResult.digits.length() >= 12) {
@@ -119,66 +125,86 @@ BarcodeResult BarcodeReader::createDetailedResult(const BarcodeResult& basicResu
             digitsToUse = "0" + digitsToUse;
         }
 
+        // --- Поиск страны ---
         if (digitsToUse.length() >= 3) {
             std::string country_code = digitsToUse.substr(0, 3);
-            QString countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
-
-            if (!countryName.isEmpty()) {
-                detailedResult.country = countryName.toStdString();
-            } else {
-                detailedResult.country = "Неизвестная страна (" + country_code + ")";
+            try {
+                QString countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
+                if (!countryName.isEmpty()) {
+                    detailedResult.country = countryName.toStdString();
+                } else {
+                    detailedResult.country = "Неизвестная страна (" + country_code + ")";
+                }
+            }
+            catch (const FileException& e) {
+                std::cerr << e.what() << std::endl;
+                detailedResult.country = "Ошибка чтения файла стран";
             }
         }
 
+        // --- Поиск производителя ---
         if (digitsToUse.length() >= 7) {
             std::string manufacturer_code = digitsToUse.substr(3, 4);
-            QString manufacturerName = Manufacturer::findManufacturerByCode(QString::fromStdString(manufacturer_code));
-
-            if (!manufacturerName.isEmpty()) {
-                detailedResult.manufacturerCode = manufacturerName.toStdString();
-            } else {
-                detailedResult.manufacturerCode = "Неизвестный производитель (" + manufacturer_code + ")";
+            try {
+                QString manufacturerName = Manufacturer::findManufacturerByCode(QString::fromStdString(manufacturer_code));
+                if (!manufacturerName.isEmpty()) {
+                    detailedResult.manufacturerCode = manufacturerName.toStdString();
+                } else {
+                    detailedResult.manufacturerCode = "Неизвестный производитель (" + manufacturer_code + ")";
+                }
+            }
+            catch (const FileException& e) {
+                std::cerr << e.what() << std::endl;
+                detailedResult.manufacturerCode = "Ошибка чтения файла производителей";
             }
 
-            if (productName.isEmpty() && digitsToUse.length() >= 7) {
+            if (detailedResult.productCode == "Н/Д" && digitsToUse.length() >= 7) {
                 std::string product_code = digitsToUse.substr(7, 5);
-                QString additionalProductName = Product::findProductByBarcode(QString::fromStdString(product_code));
-                if (!additionalProductName.isEmpty()) {
-                    detailedResult.productCode = additionalProductName.toStdString();
-                } else {
-                    detailedResult.productCode = "Товар (" + product_code + ")";
+                try {
+                    QString additionalProductName = Product::findProductByBarcode(QString::fromStdString(product_code));
+                    if (!additionalProductName.isEmpty()) {
+                        detailedResult.productCode = additionalProductName.toStdString();
+                    } else {
+                        detailedResult.productCode = "Товар (" + product_code + ")";
+                    }
+                }
+                catch (const FileException& e) {
+                    std::cerr << e.what() << std::endl;
+                    detailedResult.productCode = "Ошибка чтения файла товаров";
                 }
             }
         }
     }
     else if (basicResult.type == "EAN-8" && basicResult.digits.length() == 8) {
-        if (basicResult.digits.length() >= 2) {
-            std::string country_code;
-            QString countryName;
-
+        std::string country_code;
+        try {
             if (basicResult.digits.length() >= 3) {
                 country_code = basicResult.digits.substr(0, 3);
-                countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
+                QString countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
+                if (!countryName.isEmpty()) {
+                    detailedResult.country = countryName.toStdString();
+                }
             }
-
-            if (countryName.isEmpty() && basicResult.digits.length() >= 2) {
+            if (detailedResult.country.empty() && basicResult.digits.length() >= 2) {
                 country_code = basicResult.digits.substr(0, 2);
-                countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
+                QString countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
+                if (!countryName.isEmpty()) {
+                    detailedResult.country = countryName.toStdString();
+                } else {
+                    detailedResult.country = "Неизвестная страна (" + country_code + ")";
+                }
             }
-
-            if (!countryName.isEmpty()) {
-                detailedResult.country = countryName.toStdString();
-            } else if (!country_code.empty()) {
-                detailedResult.country = "Неизвестная страна (" + country_code + ")";
-            }
+        }
+        catch (const FileException& e) {
+            std::cerr << e.what() << std::endl;
+            detailedResult.country = "Ошибка чтения файла стран";
         }
 
         detailedResult.manufacturerCode = "Нет";
         if (basicResult.digits.length() >= 5) {
             std::string product_code = basicResult.digits.substr(2, 5);
             detailedResult.productCode = "Товар (" + product_code + ")";
-        }
-        else if (basicResult.digits.length() >= 3) {
+        } else if (basicResult.digits.length() >= 3) {
             std::string product_code = basicResult.digits.substr(2);
             detailedResult.productCode = "Товар (" + product_code + ")";
         }
@@ -204,29 +230,29 @@ BarcodeResult BarcodeReader::createDetailedResult(const BarcodeResult& basicResu
 
     return detailedResult;
 }
+
 void BarcodeReader::saveToFile(const BarcodeResult& result) {
-
     std::string filePath = "C:\\Users\\rauko\\Desktop\\Barcode_All.txt";
-
     std::ofstream file(filePath, std::ios::app);
-    if (file.is_open()) {
-        auto now = std::chrono::system_clock::now();
-        std::time_t time = std::chrono::system_clock::to_time_t(now);
-
-        std::string timeStr = std::ctime(&time);
-        if (!timeStr.empty() && timeStr[timeStr.length() - 1] == '\n') {
-            timeStr.erase(timeStr.length() - 1);
-        }
-
-        file << "=== " << timeStr << " ===" << std::endl;
-        file << "Тип: " << result.type << std::endl;
-        file << "Цифры: " << result.digits << std::endl;
-        file << "Страна: " << result.country << std::endl;
-        file << "Код производителя: " << result.manufacturerCode << std::endl;
-        file << "Код товара: " << result.productCode << std::endl;
-        file << "----------------------------------------" << std::endl;
-        file.close();
+    if (!file.is_open()) {
+        throw FileException("Не удалось открыть файл для записи: " + filePath);
     }
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(now);
+    std::string timeStr = std::ctime(&time);
+    if (!timeStr.empty() && timeStr.back() == '\n') {
+        timeStr.pop_back();
+    }
+
+    file << "=== " << timeStr << " ===\n";
+    file << "Тип: " << result.type << "\n";
+    file << "Цифры: " << result.digits << "\n";
+    file << "Страна: " << result.country << "\n";
+    file << "Код производителя: " << result.manufacturerCode << "\n";
+    file << "Код товара: " << result.productCode << "\n";
+    file << "----------------------------------------\n";
+    file.close();
 }
 
 

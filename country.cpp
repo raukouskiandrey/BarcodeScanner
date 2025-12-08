@@ -4,7 +4,7 @@
 #include <QDebug>
 #include <QRegularExpression>
 
-
+#include "FileException.h"
 Country::Country(const QString& code, const QString& name)
     : countryCode(code), countryName(name) {}
 
@@ -18,20 +18,17 @@ QString Country::findCountryByBarcode(const QString& barcode)
 {
     if (barcode.isEmpty()) return QString();
 
-    // Берём только цифры
     QString digits = barcode;
     digits.remove(QRegularExpression("[^0-9]"));
-
     if (digits.length() < 2) return QString();
 
-    QString prefix3 = digits.left(3); // первые 3 цифры
-    QString prefix2 = digits.left(2); // первые 2 цифры
+    QString prefix3 = digits.left(3);
+    QString prefix2 = digits.left(2);
 
     QString filePath = "C:/Users/rauko/Desktop/Barcode_Countries.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Не удалось открыть файл:" << filePath;
-        return QString();
+        throw FileException("Не удалось открыть файл стран: " + filePath.toStdString());
     }
 
     QTextStream in(&file);
@@ -45,34 +42,24 @@ QString Country::findCountryByBarcode(const QString& barcode)
         QString codes = line.left(colonPos).trimmed();
         QString countryName = line.mid(colonPos + 1).trimmed();
 
-        // Диапазон (например "490-499")
         if (codes.contains('-')) {
             QStringList parts = codes.split('-');
             if (parts.size() == 2) {
-                bool ok1, ok2;
-                int start = parts[0].toInt(&ok1);
-                int end = parts[1].toInt(&ok2);
+                int start = parts[0].toInt();
+                int end   = parts[1].toInt();
+                int pref3 = prefix3.toInt();
+                int pref2 = prefix2.toInt();
 
-                if (ok1 && ok2) {
-                    int pref3 = prefix3.toInt();
-                    int pref2 = prefix2.toInt();
-
-                    if ((pref3 >= start && pref3 <= end) || (pref2 >= start && pref2 <= end)) {
-                        file.close();
-                        return countryName;
-                    }
+                if ((pref3 >= start && pref3 <= end) || (pref2 >= start && pref2 <= end)) {
+                    return countryName;
                 }
             }
-        }
-        // Одиночный код (например "528")
-        else {
+        } else {
             if (codes == prefix3 || codes == prefix2) {
-                file.close();
                 return countryName;
             }
         }
     }
 
-    file.close();
     return QString("Неизвестная страна");
 }

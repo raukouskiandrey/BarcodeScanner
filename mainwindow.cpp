@@ -2,6 +2,12 @@
 #include <QApplication>
 #include <QClipboard>
 
+#include "ImageLoadException.h"
+#include "DecodeException.h"
+#include "FileException.h"
+#include "CameraException.h"
+#include "ImageBuffer.h"
+
 MainWindow::~MainWindow()
 {
     delete cameraManager;
@@ -11,13 +17,18 @@ MainWindow::~MainWindow()
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
     cameraManager(new CameraManager(this)),
-    imageManager(new ImageManager(this)),
-    barcodeReader()   // инициализация BarcodeReader
+    imageManager(new ImageManager(this))
 {
+    // Добавляем все декодеры в список
+    decoders.push_back(std::make_unique<BarcodeReader>());
+    decoders.push_back(std::make_unique<BarcodeReader2D>());
+    // В будущем можно добавить: decoders.push_back(std::make_unique<BarcodeReaderPDF417>());
+
     setupUI();
     setupConnections();
     updateScanButtonState();
 }
+
 
 void MainWindow::setupConnections()
 {
@@ -98,43 +109,73 @@ void MainWindow::loadImage()
         if (cameraManager->isCameraActive()) {
             cameraManager->stopCamera();
         }
-        if (!imageManager->loadImage(filename)) {
-            return;
+
+        try {
+            imageManager->loadImage(filename); // теперь выбрасывает исключение
+        }
+        catch (const ImageLoadException& e) {
+            QMessageBox::critical(this, "Ошибка загрузки", e.what());
         }
     }
 }
 
-void MainWindow::scanBarcode()
-{
-    if (!imageManager->hasImage() && !cameraManager->isCameraActive()) {
-        QMessageBox::warning(this, "Ошибка", "Сначала загрузите изображение или включите камеру");
-        return;
-    }
 
+void MainWindow::scanBarcode() {
     progressBar->setVisible(true);
     progressBar->setRange(0, 0);
 
-    cv::Mat imageToScan;
-    if (cameraManager->isCameraActive()) {
-        imageToScan = cameraManager->getCurrentFrame();
-    } else {
-        imageToScan = imageManager->getCurrentImage();
+    try {
+        if (!imageManager->hasImage() && !cameraManager->isCameraActive()) {
+            throw ImageLoadException("Нет изображения или камеры для сканирования");
+        }
+
+        cv::Mat imageToScan = cameraManager->isCameraActive()
+                                  ? cameraManager->getCurrentFrame()
+                                  : imageManager->getCurrentImage();
+
+        resultText->append("🔍 Начинаю сканирование...");
+
+        BarcodeResult result;
+        bool success = false;
+
+        for (auto& decoder : decoders) {
+            try {
+                result = decoder->decode(imageToScan);
+                if (result.type != "Неизвестно" && !result.digits.empty()) {
+                    success = true;
+                    break;
+                }
+            }
+            catch (const DecodeException& e) {
+                resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
+            }
+        }
+
+        if (!success) {
+            throw DecodeException("Ни один декодер не распознал штрих-код");
+        }
+
+        processBarcodeResult(result);
     }
-
-    resultText->append("🔍 Начинаю сканирование...");
-
-    // --- сначала пробуем 1D ---
-    BarcodeResult result = barcodeReader.decode(imageToScan);
-
-    // --- если не удалось, пробуем 2D ---
-    if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
-        result = barcodeReader2D.decode(imageToScan);
+    catch (const ImageLoadException& e) {
+        QMessageBox::critical(this, "Ошибка загрузки", e.what());
     }
-
-    processBarcodeResult(result);
+    catch (const DecodeException& e) {
+        QMessageBox::information(this, "Не удалось распознать", e.what());
+    }
+    catch (const FileException& e) {
+        QMessageBox::critical(this, "Ошибка файла", e.what());
+    }
+    catch (const CameraException& e) {
+        QMessageBox::critical(this, "Ошибка камеры", e.what());
+    }
+    catch (const BarcodeException& e) {
+        QMessageBox::critical(this, "Общая ошибка", e.what());
+    }
 
     progressBar->setVisible(false);
 }
+
 
 void MainWindow::clearResults()
 {
@@ -155,14 +196,23 @@ void MainWindow::clearResults()
 void MainWindow::saveBarcode()
 {
     if (!lastBarcodeResult.isEmpty()) {
-        if (lastResult.type == "QR/DataMatrix" || lastResult.type == "QR-Code") {
-            barcodeReader2D.saveToFile(lastResult);
-        } else {
-            barcodeReader.saveToFile(lastResult);
+        try {
+            for (auto& decoder : decoders) {
+                if (decoder->getDecoderName() == lastResult.type ||
+                    (lastResult.type.find("QR") != std::string::npos && decoder->getDecoderName() == "BarcodeReader2D")) {
+                    decoder->saveToFile(lastResult); // ⚠️ может выбросить FileException
+                    break;
+                }
+            }
+            resultText->append("✅ Результат сохранен в файл!");
         }
-        resultText->append("✅ Результат сохранен в файл!");
+        catch (const FileException& e) {
+            QMessageBox::critical(this, "Ошибка сохранения", e.what());
+        }
     }
 }
+
+
 
 
 void MainWindow::toggleCamera()
@@ -171,15 +221,17 @@ void MainWindow::toggleCamera()
         resultText->append("🔄 Попытка подключения к камере...");
         imageManager->clearImage();
 
-        if (!cameraManager->startCamera()) {
-            return;
+        try {
+            cameraManager->startCamera(); // ⚠️ может выбросить CameraException
+        }
+        catch (const CameraException& e) {
+            QMessageBox::critical(this, "Ошибка камеры", e.what());
         }
     } else {
         cameraManager->stopCamera();
     }
 }
 
-// --- CameraManager slots ---
 void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 {
     displayImage(frame);
@@ -188,23 +240,34 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
     frameCounter++;
 
     if (frameCounter % 10 == 0) {
-        // --- сначала пробуем 1D ---
-        BarcodeResult result = barcodeReader.decode(frame);
-
-        // --- если не удалось, пробуем 2D ---
-        if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
-            result = barcodeReader2D.decode(frame);
-        }
-
-        if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
-            QString newBarcode = QString::fromStdString(result.type) + " " + QString::fromStdString(result.digits);
-            if (newBarcode != lastBarcodeResult) {
-                processBarcodeResult(result);
-                frameCounter = 0;
+        try {
+            BarcodeResult result;
+            for (auto& decoder : decoders) {
+                try {
+                    result = decoder->decode(frame);
+                    if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
+                        break;
+                    }
+                }
+                catch (const DecodeException& e) {
+                    resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
+                }
             }
+
+            if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
+                QString newBarcode = QString::fromStdString(result.type) + " " + QString::fromStdString(result.digits);
+                if (newBarcode != lastBarcodeResult) {
+                    processBarcodeResult(result);
+                    frameCounter = 0;
+                }
+            }
+        }
+        catch (const BarcodeException& e) {
+            QMessageBox::warning(this, "Ошибка при сканировании", e.what());
         }
     }
 }
+
 
 void MainWindow::onCameraStarted()
 {
@@ -372,24 +435,27 @@ void MainWindow::openPhoneDialog()
     connect(server, &WebServer::fileSaved, this, [&](const QString& path) {
         resultText->append("📂 Файл сохранён: " + path);
 
-        // Загружаем картинку через OpenCV
         cv::Mat mat = cv::imread(path.toStdString());
         if (!mat.empty()) {
-            displayImage(mat);  // твоя функция уже умеет показывать в imageLabel
+            displayImage(mat);
         } else {
             resultText->append("❌ Ошибка: OpenCV не смог загрузить изображение");
         }
 
-        // --- Распознавание штрих-кода ---
-        BarcodeResult result = barcodeReader.decode(path.toStdString());
-        if (result.type == "Неизвестно" || result.type == "Ошибка" || result.digits.empty()) {
-            result = barcodeReader2D.decode(path.toStdString());
+        try {
+            BarcodeResult result;
+            for (auto& decoder : decoders) {
+                result = decoder->decode(path.toStdString()); // ⚠️ может выбросить исключение
+                if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
+                    break;
+                }
+            }
+            processBarcodeResult(result);
         }
-        processBarcodeResult(result);
+        catch (const BarcodeException& e) {
+            QMessageBox::warning(this, "Ошибка при распознавании", e.what());
+        }
     });
-
-
-
     dialog.exec();
 }
 

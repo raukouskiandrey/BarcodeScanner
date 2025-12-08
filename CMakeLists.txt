@@ -103,6 +103,13 @@ qt_add_executable(BarcodeScanner MANUAL_FINALIZATION
         BarcodeReader2D.cpp
         WebServer.h
         WebServer.cpp
+        AbstractDecoder.h
+        BarcodeException.h
+        ImageLoadException.h
+        CameraException.h
+        DecodeException.h
+        FileException.h
+        ImageBuffer.h
 )
 
 # =============================================================================

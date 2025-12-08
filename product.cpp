@@ -2,7 +2,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
-
+#include "FileException.h"
 Product::Product(const QString& code, const QString& name, const QString& barcode)
     : productCode(code), productName(name), barcode(barcode) {}
 
@@ -18,8 +18,7 @@ QString Product::findProductByBarcode(const QString& barcode)
     QString filePath = "C:/Users/rauko/Desktop/Barcode_Products.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Не удалось открыть файл:" << filePath;
-        return QString("Ошибка: файл не найден");
+        throw FileException("Не удалось открыть файл товаров: " + filePath.toStdString());
     }
 
     QTextStream in(&file);
@@ -27,21 +26,17 @@ QString Product::findProductByBarcode(const QString& barcode)
         QString line = in.readLine().trimmed();
         if (line.isEmpty() || line.startsWith("#")) continue;
 
-        // Формат: barcode | manufacturer | productName
         QStringList parts = line.split('|');
         if (parts.size() == 3) {
-            QString fileBarcode = parts[0].trimmed();
+            QString fileBarcode  = parts[0].trimmed();
             QString manufacturer = parts[1].trimmed();
-            QString productName = parts[2].trimmed();
+            QString productName  = parts[2].trimmed();
 
             if (fileBarcode == barcode) {
-                file.close();
                 return productName + " (Производитель: " + manufacturer + ", ШК: " + fileBarcode + ")";
             }
         }
     }
 
-    file.close();
     return QString("Неизвестный товар (" + barcode + ")");
 }
-

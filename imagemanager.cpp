@@ -1,7 +1,8 @@
 #include "imagemanager.h"
 #include <QDebug>
 #include <QFileInfo>
-
+#include "FileException.h"
+#include "ImageLoadException.h"
 ImageManager::ImageManager(QObject* parent)
     : QObject(parent), imageLoadedFlag(false)
 {
@@ -10,14 +11,12 @@ ImageManager::ImageManager(QObject* parent)
 bool ImageManager::loadImage(const QString& filePath)
 {
     if (!QFileInfo::exists(filePath)) {
-        emit imageError("Файл не существует: " + filePath);
-        return false;
+        throw ImageLoadException("Файл не существует: " + filePath.toStdString());
     }
 
     cv::Mat image = cv::imread(filePath.toStdString());
     if (image.empty()) {
-        emit imageError("Не удалось загрузить изображение: " + filePath);
-        return false;
+        throw ImageLoadException("Не удалось загрузить изображение: " + filePath.toStdString());
     }
 
     currentImage = image;
@@ -27,17 +26,14 @@ bool ImageManager::loadImage(const QString& filePath)
     emit imageLoaded(filePath, QSize(image.cols, image.rows));
     return true;
 }
-
-bool ImageManager::saveImage(const QString& filePath, const cv::Mat& image)
-{
+bool ImageManager::saveImage(const QString& filePath, const cv::Mat& image) {
     if (image.empty()) {
-        emit imageError("Пустое изображение для сохранения");
-        return false;
+        throw FileException("Пустое изображение для сохранения: " + filePath.toStdString());
     }
 
     bool success = cv::imwrite(filePath.toStdString(), image);
     if (!success) {
-        emit imageError("Не удалось сохранить изображение: " + filePath);
+        throw FileException("Не удалось сохранить изображение: " + filePath.toStdString());
     }
 
     return success;

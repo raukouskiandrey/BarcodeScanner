@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include "FileException.h"
 
 Manufacturer::Manufacturer(const QString& code, const QString& name, const QString& country)
     : manufacturerCode(code), manufacturerName(name), countryCode(country) {}
@@ -18,8 +19,7 @@ QString Manufacturer::findManufacturerByCode(const QString& code)
     QString filePath = "C:/Users/rauko/Desktop/Barcode_Manufacturers.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Не удалось открыть файл:" << filePath;
-        return QString("Ошибка: файл не найден");
+        throw FileException("Не удалось открыть файл производителей: " + filePath.toStdString());
     }
 
     QTextStream in(&file);
@@ -27,20 +27,17 @@ QString Manufacturer::findManufacturerByCode(const QString& code)
         QString line = in.readLine().trimmed();
         if (line.isEmpty() || line.startsWith("#")) continue;
 
-        // Формат: manufacturerCode:manufacturerName:countryCode
         QStringList parts = line.split(':');
         if (parts.size() == 3) {
             QString manufacturerCode = parts[0].trimmed();
             QString manufacturerName = parts[1].trimmed();
-            QString countryCode = parts[2].trimmed();
+            QString countryCode      = parts[2].trimmed();
 
             if (manufacturerCode == code) {
-                file.close();
                 return manufacturerName + " (" + manufacturerCode + "), страна: " + countryCode;
             }
         }
     }
 
-    file.close();
     return QString("Неизвестный производитель (" + code + ")");
 }

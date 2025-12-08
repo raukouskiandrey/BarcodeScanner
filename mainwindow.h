@@ -13,14 +13,16 @@
 #include <QMessageBox>
 
 #include <opencv2/opencv.hpp>
+#include <memory>
+#include <vector>
 
 #include "cameramanager.h"
 #include "imagemanager.h"
+#include "AbstractDecoder.h"
 #include "BarcodeReader.h"
 #include "BarcodeReader2D.h"
 #include "BarcodeResult.h"
 #include "WebServer.h"
-
 
 class MainWindow : public QMainWindow
 {
@@ -31,20 +33,19 @@ public:
     ~MainWindow();
 
 private slots:
-    // --- кнопки ---
     void loadImage();
     void scanBarcode();
     void clearResults();
     void saveBarcode();
     void toggleCamera();
 
-    // --- CameraManager ---
+    // CameraManager
     void onCameraFrameReady(const cv::Mat& frame);
     void onCameraStarted();
     void onCameraStopped();
     void onCameraError(const QString& error);
 
-    // --- ImageManager ---
+    // ImageManager
     void onImageLoaded(const QString& filePath, const QSize& size);
     void onImageCleared();
     void onImageError(const QString& error);
@@ -60,6 +61,7 @@ private:
     QPushButton* clearButton;
     QPushButton* saveButton;
     QPushButton* cameraButton;
+    QPushButton* phoneButton;
 
     QLabel* imageLabel;
     QTextEdit* resultText;
@@ -68,15 +70,13 @@ private:
     // --- Менеджеры ---
     CameraManager* cameraManager;
     ImageManager* imageManager;
-    BarcodeReader barcodeReader;   // экземпляр BarcodeReader
-    BarcodeReader2D barcodeReader2D;
+
+    // --- Универсальные декодеры ---
+    std::vector<std::unique_ptr<AbstractDecoder>> decoders;
 
     // --- Последний результат ---
     BarcodeResult lastResult;
     QString lastBarcodeResult;
-
-    QPushButton* phoneButton;
-
 
     // --- Методы ---
     void setupUI();
