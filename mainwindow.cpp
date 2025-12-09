@@ -232,43 +232,48 @@ void MainWindow::toggleCamera()
     }
 }
 
+static ImageBuffer<cv::Mat> cameraBuffer(10);
+
 void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 {
+    // Отображаем кадр в интерфейсе
     displayImage(frame);
 
+    // Счётчик кадров
     static int frameCounter = 0;
     frameCounter++;
 
-    if (frameCounter % 10 == 0) {
+    // Добавляем только каждый 5-й кадр
+    if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
-            BarcodeResult result;
-            for (auto& decoder : decoders) {
-                try {
-                    result = decoder->decode(frame);
-                    if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
-                        break;
-                    }
-                }
-                catch (const DecodeException& e) {
-                    resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
-                }
-            }
-
-            if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
-                QString newBarcode = QString::fromStdString(result.type) + " " + QString::fromStdString(result.digits);
-                if (newBarcode != lastBarcodeResult) {
-                    processBarcodeResult(result);
-                    frameCounter = 0;
-                }
-            }
-        }
-        catch (const BarcodeException& e) {
-            QMessageBox::warning(this, "Ошибка при сканировании", e.what());
+            cameraBuffer << frame;
+        } catch (const std::exception& e) {
+            resultText->append(QString("⚠️ Ошибка буфера: ") + e.what());
+            return;
         }
     }
+
+    // Проверяем все кадры в контейнере
+    try {
+        for (auto& img : cameraBuffer) {
+            for (auto& decoder : decoders) {
+                BarcodeResult result = decoder->decode(img);
+                if (result.type != "Неизвестно" && !result.digits.empty()) {
+                    processBarcodeResult(result);
+                    cameraBuffer.clear();   // очищаем контейнер после успеха
+                    frameCounter = 0;       // сбрасываем счётчик
+                    return;
+                }
+            }
+        }
+    }
+    catch (const DecodeException& e) {
+        resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        resultText->append(QString("⚠️ Общая ошибка: ") + e.what());
+    }
 }
-
-
 void MainWindow::onCameraStarted()
 {
     cameraButton->setText("📷 Выключить камеру");

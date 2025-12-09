@@ -46,4 +46,10 @@ public:
     typename std::vector<T>::iterator end() { return buffer.end(); }
     typename std::vector<T>::const_iterator begin() const { return buffer.begin(); }
     typename std::vector<T>::const_iterator end() const { return buffer.end(); }
+
+    // 🔹 Перегрузка оператора <<
+    ImageBuffer<T>& operator<<(const T& item) {
+        add(item);
+        return *this;
+    }
 };
