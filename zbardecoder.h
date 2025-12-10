@@ -1,38 +1,17 @@
-#ifndef ZBARDECODER_H
-#define ZBARDECODER_H
-
+#pragma once
 #include <opencv2/opencv.hpp>
 #include <zbar.h>
 #include <string>
+#include "BarcodeResult.h"
 
-// Переименуем структуру чтобы избежать конфликта
-struct ZBarResult {
-    std::string type;
-    std::string digits;
-    std::string fullResult;
-    std::string country;
-    std::string manufacturerCode;
-    std::string productCode;
-
-    ZBarResult()
-        : type("Неизвестно"), digits(""), fullResult(""),
-        country(""), manufacturerCode(""), productCode("") {}
-};
-
-class ZBarDecoder
-{
+class ZBarDecoder {
 private:
     zbar::ImageScanner zbar_scanner;
-
 public:
-    ZBarDecoder();
-    ~ZBarDecoder() = default;
+    ZBarDecoder(); // Явное объявление конструктора
+    ~ZBarDecoder() = default; // И деструктора тоже
 
-    std::string decode(const cv::Mat& roi);
-    ZBarResult parseResult(const std::string& zbarResult);
-
-private:
+    std::string decodeWithZBar(const cv::Mat& roi);
     std::string filterBarcodeResult(const std::string& result);
+    BarcodeResult parseZBarResult(const std::string& zbarResult);
 };
-
-#endif // ZBARDECODER_H

@@ -13,7 +13,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =============================================================================
 
 set(CMAKE_PREFIX_PATH "C:/msys64/mingw64")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Concurrent)  # ← ДОБАВЛЕНО Concurrent
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+
+
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 # =============================================================================
 # OpenCV НАСТРОЙКИ
@@ -67,60 +70,48 @@ endif()
 # =============================================================================
 
 qt_add_executable(BarcodeScanner MANUAL_FINALIZATION
-    main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    mainwindow.ui
-    barcodescanner.cpp
-    barcodescanner.h
-    country.cpp
-    country.h
-    manufacturer.cpp
-    manufacturer.h
-    product.cpp
-    product.h
-    barcodedetector.cpp
-    barcodedetector.h
-    barcodedecoder.cpp
-    barcodedecoder.h
-    barcodevalidator.cpp
-    barcodevalidator.h
-    barcodepreprocessor.cpp
-    barcodepreprocessor.h
-    barcoderegionfinder.cpp
-    barcoderegionfinder.h
-    countrydataloader.cpp
-    countrydataloader.h
-    manufacturerdataloader.cpp
-    manufacturerdataloader.h
-    productdataloader.cpp
-    productdataloader.h
-    fileexportservice.cpp
-    fileexportservice.h
-    resultdisplay.cpp
-    resultdisplay.h
-    barcodedetector.h
-    barcodedetector.cpp
-    barcodedecoder.h
-    barcodedecoder.cpp
-    barcodevalidator.h
-    barcodevalidator.cpp
-    barcodepreprocessor.h
-    barcodepreprocessor.cpp
-    barcoderegionfinder.h
-    barcoderegionfinder.cpp
-    countrydataloader.h
-    countrydataloader.cpp
-    manufacturerdataloader.h
-    manufacturerdataloader.cpp
-    productdataloader.h
-    productdataloader.cpp
-    fileexportservice.h
-    fileexportservice.cpp
-    resultdisplay.h
-    resultdisplay.cpp
-    barcodeserver.h
-    barcodeserver.cpp
+        main.cpp
+        mainwindow.cpp
+        mainwindow.h
+        mainwindow.ui
+        country.cpp
+        country.h
+        manufacturer.cpp
+        manufacturer.h
+        product.cpp
+        product.h
+        imagemanager.cpp
+        imagemanager.h
+        cameramanager.cpp
+        cameramanager.h
+        BarcodeReader.h
+        BarcodeDetectorOpenCV.h
+        CurvedBarcodeDetector.h
+        ImagePreprocessor.h
+        ZBarDecoder.h
+        SmartDecoder.h
+        BarcodeReader.cpp
+        BarcodeDetectorOpenCV.cpp
+        CurvedBarcodeDetector.cpp
+        ImagePreprocessor.cpp
+        ZBarDecoder.cpp
+        SmartDecoder.cpp
+        BarcodeResult.h
+        BarcodeDetectorOpenCV2D.h
+        BarcodeDetectorOpenCV2D.cpp
+        BarcodeReader2D.h
+        BarcodeReader2D.cpp
+        WebServer.h
+        WebServer.cpp
+        AbstractDecoder.h
+        BarcodeException.h
+        ImageLoadException.h
+        CameraException.h
+        DecodeException.h
+        FileException.h
+        ImageBuffer.h
+        FailureAnalysis.cpp
+        FailureAnalysis.h
 )
 
 # =============================================================================
@@ -131,8 +122,6 @@ target_compile_definitions(BarcodeScanner PRIVATE
     QT_CORE_LIB
     QT_GUI_LIB
     QT_WIDGETS_LIB
-    QT_NETWORK_LIB
-    QT_CONCURRENT_LIB  # ← ДОБАВЛЕНО
 )
 
 target_include_directories(BarcodeScanner PRIVATE
@@ -142,7 +131,6 @@ target_include_directories(BarcodeScanner PRIVATE
     ${Qt6Core_INCLUDE_DIRS}
     ${Qt6Widgets_INCLUDE_DIRS}
     ${Qt6Network_INCLUDE_DIRS}
-    ${Qt6Concurrent_INCLUDE_DIRS}  # ← ДОБАВЛЕНО
 )
 
 # =============================================================================
@@ -153,7 +141,6 @@ target_link_libraries(BarcodeScanner PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::Network
-    Qt6::Concurrent  # ← ДОБАВЛЕНО
     ${OpenCV_LIBS}
     "${ZBAR_LIBRARY}"
 )
@@ -196,8 +183,6 @@ message(STATUS "Searching for Qt DLLs in: ${QT_BIN_PATH}")
 find_file(QT6_CORE_DLL Qt6Core.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
 find_file(QT6_WIDGETS_DLL Qt6Widgets.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
 find_file(QT6_GUI_DLL Qt6Gui.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
-find_file(QT6_NETWORK_DLL Qt6Network.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
-find_file(QT6_CONCURRENT_DLL Qt6Concurrent.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)  # ← ДОБАВЛЕНО
 
 # Проверка найденных DLL
 if(QT6_CORE_DLL)
@@ -218,24 +203,10 @@ else()
     message(FATAL_ERROR "✗ Not found: Qt6Gui.dll")
 endif()
 
-if(QT6_NETWORK_DLL)
-    message(STATUS "✓ Found: ${QT6_NETWORK_DLL}")
-else()
-    message(FATAL_ERROR "✗ Not found: Qt6Network.dll")
-endif()
-
-if(QT6_CONCURRENT_DLL)
-    message(STATUS "✓ Found: ${QT6_CONCURRENT_DLL}")
-else()
-    message(FATAL_ERROR "✗ Not found: Qt6Concurrent.dll")
-endif()
-
 # Копирование основных Qt DLL
 copy_dll_if_exists("${QT6_CORE_DLL}" BarcodeScanner)
 copy_dll_if_exists("${QT6_WIDGETS_DLL}" BarcodeScanner)
 copy_dll_if_exists("${QT6_GUI_DLL}" BarcodeScanner)
-copy_dll_if_exists("${QT6_NETWORK_DLL}" BarcodeScanner)
-copy_dll_if_exists("${QT6_CONCURRENT_DLL}" BarcodeScanner)  # ← ДОБАВЛЕНО
 
 # =============================================================================
 # КОПИРОВАНИЕ Qt6 ПЛАГИНОВ
@@ -324,12 +295,10 @@ message(STATUS "Build dir: ${CMAKE_BINARY_DIR}")
 message(STATUS "=== REQUIRED COMPONENTS ===")
 message(STATUS "Qt6 Core: ${Qt6Core_FOUND}")
 message(STATUS "Qt6 Widgets: ${Qt6Widgets_FOUND}")
-message(STATUS "Qt6 Network: ${Qt6Network_FOUND}")
-message(STATUS "Qt6 Concurrent: ${Qt6Concurrent_FOUND}")  # ← ДОБАВЛЕНО
 message(STATUS "OpenCV: ${OpenCV_FOUND}")
 message(STATUS "ZBar library: ${ZBAR_LIBRARY}")
 
-if(Qt6Core_FOUND AND Qt6Widgets_FOUND AND Qt6Network_FOUND AND Qt6Concurrent_FOUND AND OpenCV_FOUND AND ZBAR_LIBRARY)
+if(Qt6Core_FOUND AND Qt6Widgets_FOUND AND OpenCV_FOUND AND ZBAR_LIBRARY)
     message(STATUS "✓ All required components found!")
 else()
     message(FATAL_ERROR "✗ Some required components are missing!")

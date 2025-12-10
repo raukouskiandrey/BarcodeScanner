@@ -1,4 +1,4 @@
-#ifndef MANUFACTURER_H
+﻿#ifndef MANUFACTURER_H
 #define MANUFACTURER_H
 
 #include <QString>
@@ -6,9 +6,9 @@
 class Manufacturer
 {
 private:
-    QString manufacturerCode;
-    QString manufacturerName;
-    QString countryCode;
+    QString manufacturerCode;   // Код производителя
+    QString manufacturerName;   // Название производителя
+    QString countryCode;        // Код страны
 
 public:
     Manufacturer(const QString& code = "", const QString& name = "", const QString& country = "");
@@ -19,6 +19,9 @@ public:
     QString getFullInfo() const;
 
     bool isValid() const;
+
+    // 📂 Новый метод: поиск производителя по коду штрих-кода напрямую в файле
+    static QString findManufacturerByCode(const QString& code);
 };
 
 #endif // MANUFACTURER_H
