@@ -1,7 +1,9 @@
-#include "zbardecoder.h"
+#include "barcodedecoder.h"
 #include <iostream>
+#include <opencv2/opencv.hpp>
 
-ZBarDecoder::ZBarDecoder() {
+BarcodeDecoder::BarcodeDecoder()
+{
     zbar_scanner.set_config(zbar::ZBAR_EAN13, zbar::ZBAR_CFG_ENABLE, 1);
     zbar_scanner.set_config(zbar::ZBAR_EAN8, zbar::ZBAR_CFG_ENABLE, 1);
     zbar_scanner.set_config(zbar::ZBAR_UPCA, zbar::ZBAR_CFG_ENABLE, 1);
@@ -10,11 +12,17 @@ ZBarDecoder::ZBarDecoder() {
     zbar_scanner.set_config(zbar::ZBAR_CODE39, zbar::ZBAR_CFG_ENABLE, 1);
 }
 
-std::string ZBarDecoder::decode(const cv::Mat& roi) {
+BarcodeDecoder::~BarcodeDecoder()
+{
+}
+
+std::string BarcodeDecoder::decodeWithZBar(const cv::Mat& roi)
+{
     cv::Mat gray;
     if (roi.channels() == 3) {
         cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
-    } else {
+    }
+    else {
         gray = roi.clone();
     }
 
@@ -35,41 +43,45 @@ std::string ZBarDecoder::decode(const cv::Mat& roi) {
                 std::string data = symbol->get_data();
 
                 std::cout << "ZBar detected: " << type_name << " - " << data << std::endl;
+
                 return type_name + ": " + data;
             }
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         std::cerr << "ZBar error: " << e.what() << std::endl;
     }
     return "";
 }
 
-ZBarResult ZBarDecoder::parseResult(const std::string& zbarResult) {
-    ZBarResult result;
+std::string BarcodeDecoder::smartDecodeWithUnwarp(const cv::Mat& frame, const cv::Rect& rect)
+{
+    if (rect.empty()) return "";
 
-    if (zbarResult.empty()) {
-        return result;
+    cv::Mat roi = frame(rect).clone();
+    std::vector<cv::Mat> processing_options;
+
+    processing_options.push_back(roi);
+
+    if (rect.width < 150) {
+        cv::Mat scaled;
+        double scale = std::min(3.0, 200.0 / rect.width);
+        cv::resize(roi, scaled, cv::Size(), scale, scale, cv::INTER_CUBIC);
+        processing_options.push_back(scaled);
     }
 
-    size_t colon_pos = zbarResult.find(":");
-    if (colon_pos != std::string::npos) {
-        std::string type = zbarResult.substr(0, colon_pos);
-        std::string digits = zbarResult.substr(colon_pos + 2); // +2 чтобы пропустить ": "
+    // Здесь будет вызов BarcodePreprocessor
+    // processing_options.push_back(enhanceContrast(roi));
+    // processing_options.push_back(enhanceSharpness(roi, 2.0));
 
-        result.type = type;
-        result.digits = digits;
-        result.fullResult = zbarResult;
-    } else {
-        result.type = "Unknown Format";
-        result.digits = zbarResult;
-        result.fullResult = zbarResult;
+    for (int i = 0; i < processing_options.size(); i++) {
+        std::string result = decodeWithZBar(processing_options[i]);
+
+        if (!result.empty()) {
+            std::cout << "Curved barcode decoded with option " << i << ": " << result << std::endl;
+            return result;
+        }
     }
 
-    return result;
-}
-
-std::string ZBarDecoder::filterBarcodeResult(const std::string& result) {
-    if (result.empty()) return "";
-    std::cout << "ZBar raw result: " << result << std::endl;
-    return result;
+    return "";
 }

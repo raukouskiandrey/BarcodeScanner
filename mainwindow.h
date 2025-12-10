@@ -2,34 +2,29 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QWidget>
+#include <QLabel>
+#include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QPushButton>
-#include <QLabel>
-#include <QTextEdit>
-#include <QProgressBar>
 #include <QFileDialog>
 #include <QMessageBox>
-
+#include <QTextEdit>
+#include <QProgressBar>
+#include <QTimer>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QThread>
+#include <QFuture>
+#include <QtConcurrent>
 #include <opencv2/opencv.hpp>
-#include <memory>
-#include <vector>
-
-#include "cameramanager.h"
-#include "imagemanager.h"
-#include "AbstractDecoder.h"
-#include "BarcodeReader.h"
-#include "BarcodeReader2D.h"
-#include "BarcodeResult.h"
-#include "WebServer.h"
+#include "barcodescanner.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -38,53 +33,69 @@ private slots:
     void clearResults();
     void saveBarcode();
     void toggleCamera();
+    void updateCameraFrame();
+    void processBarcodeResult(const BarcodeReader::BarcodeResult& result);
 
-    // CameraManager
-    void onCameraFrameReady(const cv::Mat& frame);
-    void onCameraStarted();
-    void onCameraStopped();
-    void onCameraError(const QString& error);
+    // Web server slots
+    void toggleWebServer();
+    void onNewConnection();
+    void onReadyRead();
+    void onClientDisconnected();
 
-    // ImageManager
-    void onImageLoaded(const QString& filePath, const QSize& size);
-    void onImageCleared();
-    void onImageError(const QString& error);
+    // Async slots
+    void onScanFinished();
+
+private slots:
+    void onImageReceived(const QPixmap &pixmap);
+    void onLogMessage(const QString &message);
 
 private:
-    // --- UI ---
-    QWidget* centralWidget;
-    QVBoxLayout* mainLayout;
-    QHBoxLayout* buttonLayout;
+    void setupUI();
+    void displayImage(const cv::Mat& image);
+    void processHttpRequest(QTcpSocket *client, const QByteArray &request);
+    void sendHttpResponse(QTcpSocket *client, const QByteArray &content,
+                          const QString &contentType = "text/html", int statusCode = 200);
+    QString generateHtmlForm();
+    void saveUploadedImage(const QByteArray &data, const QString &boundary);
+    cv::Mat QImageToMat(const QImage& qImage);
 
-    QPushButton* loadButton;
-    QPushButton* scanButton;
-    QPushButton* clearButton;
-    QPushButton* saveButton;
-    QPushButton* cameraButton;
-    QPushButton* phoneButton;
+    QWidget *centralWidget;
+    QVBoxLayout *mainLayout;
+    QHBoxLayout *buttonLayout;
+    QHBoxLayout *serverButtonLayout;
 
-    QLabel* imageLabel;
-    QTextEdit* resultText;
-    QProgressBar* progressBar;
+    QPushButton *loadButton;
+    QPushButton *scanButton;
+    QPushButton *clearButton;
+    QPushButton *saveButton;
+    QPushButton *cameraButton;
+    QPushButton *webServerButton;
 
-    // --- Менеджеры ---
-    CameraManager* cameraManager;
-    ImageManager* imageManager;
+    QLabel *imageLabel;
+    QLabel *serverStatusLabel;
+    QTextEdit *resultText;
+    QProgressBar *progressBar;
 
-    // --- Универсальные декодеры ---
-    std::vector<std::unique_ptr<AbstractDecoder>> decoders;
-
-    // --- Последний результат ---
-    BarcodeResult lastResult;
+    cv::Mat currentImage;
+    BarcodeReader barcodeReader;
+    bool imageLoaded;
     QString lastBarcodeResult;
 
-    // --- Методы ---
-    void setupUI();
-    void setupConnections();
-    void displayImage(const cv::Mat& image);
-    void updateScanButtonState();
-    void processBarcodeResult(const BarcodeResult& result);
-    void openPhoneDialog();
+    QTimer *cameraTimer;
+    cv::VideoCapture *videoCapture;
+    bool cameraActive;
+
+    // Web server members
+    QTcpServer *tcpServer;
+    QList<QTcpSocket*> clients;
+    quint16 serverPort;
+    bool serverActive;
+    QString uploadDir;
+    QLabel *m_imageLabel;
+    QTextEdit *m_logText;
+    // Async scanning
+    bool isScanning;
+    QFuture<void> scanFuture;
 };
 
 #endif // MAINWINDOW_H
