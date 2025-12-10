@@ -6,7 +6,8 @@
 double FailureAnalysis::calculateSharpness(const cv::Mat& gray) {
     cv::Mat lap;
     cv::Laplacian(gray, lap, CV_64F);
-    cv::Scalar mean, stddev;
+    cv::Scalar mean;
+    cv::Scalar stddev;
     cv::meanStdDev(lap, mean, stddev);
     return stddev[0];
 }
@@ -47,7 +48,8 @@ FailureAnalysis analyzeDecodingFailure(const BarcodeReader& /*decoder*/,
     else
         gray = failedImage.clone();
 
-    cv::Scalar mean, stddev;
+    cv::Scalar mean;
+    cv::Scalar stddev;
     cv::meanStdDev(gray, mean, stddev);
     analysis.metrics["brightness"] = mean[0];
     analysis.metrics["contrast"] = stddev[0];
@@ -93,7 +95,7 @@ FailureAnalysis analyzeDecodingFailure(const BarcodeReader& /*decoder*/,
     }
 
     // --- Итоговый выбор основной проблемы ---
-    std::sort(analysis.problems.begin(), analysis.problems.end());
+    std::ranges::sort(analysis.problems);
     if (!analysis.problems.empty()) {
         analysis.primaryProblem = analysis.problems[0];
         double score = 100.0;
