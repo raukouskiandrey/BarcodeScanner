@@ -95,7 +95,7 @@ FailureAnalysis analyzeDecodingFailure(const BarcodeReader& /*decoder*/,
     }
 
     // --- Итоговый выбор основной проблемы ---
-    std::ranges::sort(analysis.problems);
+    std::sort(analysis.problems.begin(), analysis.problems.end());
     if (!analysis.problems.empty()) {
         analysis.primaryProblem = analysis.problems[0];
         double score = 100.0;

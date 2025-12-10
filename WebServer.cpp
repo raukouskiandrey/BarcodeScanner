@@ -104,8 +104,7 @@ void WebServer::onReadyRead()
     int headerEnd = requestBuffer.indexOf("\r\n\r\n");
     if (headerEnd == -1) return; // заголовки ещё не полностью пришли
 
-    qint64 bodySize = requestBuffer.size() - (headerEnd + 4);
-    if (expectedLength != -1 && bodySize < expectedLength) {
+    if (expectedLength != -1 && requestBuffer.size() - (headerEnd + 4) < expectedLength) {
         return; // ждём оставшиеся байты
     }
 

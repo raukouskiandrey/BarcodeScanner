@@ -22,7 +22,8 @@ cv::Mat ImagePreprocessor::enhanceContrast(const cv::Mat& input) {
 
 cv::Mat ImagePreprocessor::enhanceSharpness(const cv::Mat& input, double strength) {
 
-    cv::Mat blurred, sharpened;
+    cv::Mat blurred;
+    cv::Mat sharpened;
     cv::GaussianBlur(input, blurred, cv::Size(0, 0), 1.0);
     cv::addWeighted(input, 1.0 + strength, blurred, -strength, 0, sharpened);
     return sharpened;
