@@ -240,10 +240,14 @@ void BarcodeReader::saveToFile(const BarcodeResult& result) {
 
     auto now = std::chrono::system_clock::now();
     std::time_t time = std::chrono::system_clock::to_time_t(now);
-    std::string timeStr = std::ctime(&time);
-    if (!timeStr.empty() && timeStr.back() == '\n') {
-        timeStr.pop_back();
-    }
+
+    // Простое решение для Windows
+    std::tm tmBuf;
+    localtime_s(&tmBuf, &time);  // Используем Windows-специфичную функцию
+
+    std::ostringstream oss;
+    oss << std::put_time(&tmBuf, "%Y-%m-%d %H:%M:%S");
+    std::string timeStr = oss.str();
 
     file << "=== " << timeStr << " ===\n";
     file << "Тип: " << result.type << "\n";
@@ -254,5 +258,4 @@ void BarcodeReader::saveToFile(const BarcodeResult& result) {
     file << "----------------------------------------\n";
     file.close();
 }
-
 
