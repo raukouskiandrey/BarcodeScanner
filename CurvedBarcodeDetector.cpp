@@ -12,22 +12,30 @@ std::vector<cv::Rect> CurvedBarcodeDetector::detectCurvedBarcodesOptimized(const
 
     std::vector<cv::Mat> binary_images;
 
-    cv::Mat binary1, binary2, binary3;
+    // Исправлено: каждая переменная в отдельной строке
+    cv::Mat binary1;
+    cv::Mat binary2;
+    cv::Mat binary3;
+
     cv::adaptiveThreshold(gray, binary1, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv::THRESH_BINARY, 21, 5);
+                          cv::THRESH_BINARY, 21, 5);
     cv::adaptiveThreshold(gray, binary2, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv::THRESH_BINARY, 31, 10);
+                          cv::THRESH_BINARY, 31, 10);
     cv::threshold(gray, binary3, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
     binary_images.push_back(binary1);
     binary_images.push_back(binary2);
     binary_images.push_back(binary3);
 
-    cv::Mat grad_x, grad_y;
+    // Исправлено: каждая переменная в отдельной строке
+    cv::Mat grad_x;
+    cv::Mat grad_y;
+
     cv::Sobel(gray, grad_x, CV_16S, 1, 0, 3);
     cv::Sobel(gray, grad_y, CV_16S, 0, 1, 3);
     cv::convertScaleAbs(grad_x, grad_x);
     cv::convertScaleAbs(grad_y, grad_y);
+
     cv::Mat gradients;
     cv::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, gradients);
     cv::threshold(gradients, gradients, 50, 255, cv::THRESH_BINARY);
@@ -83,7 +91,7 @@ std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv
 }
 
 bool CurvedBarcodeDetector::isValidBarcodeRegionExtended(const cv::Rect& rect, const cv::Size& image_size,
-    const std::vector<cv::Point>& contour) {
+                                                         const std::vector<cv::Point>& contour) {
     if (rect.width < 30 || rect.height < 10) return false;
     if (rect.width > image_size.width * 0.7 || rect.height > image_size.height * 0.7) return false;
 
@@ -145,11 +153,19 @@ bool CurvedBarcodeDetector::hasBarcodeTextureAdvanced(const cv::Mat& region) {
         cv::cvtColor(region, gray, cv::COLOR_BGR2GRAY);
     }
 
-    cv::Mat grad_x, grad_y;
+    // Исправлено: каждая переменная в отдельной строке
+    cv::Mat grad_x;
+    cv::Mat grad_y;
+
     cv::Sobel(gray, grad_x, CV_32F, 1, 0, 3);
     cv::Sobel(gray, grad_y, CV_32F, 0, 1, 3);
 
-    cv::Scalar mean_x, stddev_x, mean_y, stddev_y;
+    // Исправлено: каждая переменная в отдельной строке
+    cv::Scalar mean_x;
+    cv::Scalar stddev_x;
+    cv::Scalar mean_y;
+    cv::Scalar stddev_y;
+
     cv::meanStdDev(grad_x, mean_x, stddev_x);
     cv::meanStdDev(grad_y, mean_y, stddev_y);
 

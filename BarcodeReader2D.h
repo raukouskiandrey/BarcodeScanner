@@ -8,7 +8,7 @@
 class BarcodeReader2D : public AbstractDecoder {
 public:
     BarcodeReader2D();
-    ~BarcodeReader2D();
+    ~BarcodeReader2D() override;
 
     BarcodeResult decode(const cv::Mat& image) override;
     BarcodeResult decode(const std::string& filename) override;

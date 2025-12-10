@@ -4,7 +4,8 @@
 std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(const cv::Mat& frame) {
     std::vector<std::vector<cv::Point>> polygons;
     std::vector<cv::Point> corners;
-    std::vector<std::string> decoded_info, decoded_type;
+    std::vector<std::string> decoded_info;
+    std::vector<std::string> decoded_type;
 
     try {
         bool detected = opencv_detector.detectAndDecodeWithType(frame, decoded_info, decoded_type, corners);

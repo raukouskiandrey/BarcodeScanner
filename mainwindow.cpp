@@ -7,6 +7,7 @@
 #include "FileException.h"
 #include "CameraException.h"
 #include "ImageBuffer.h"
+#include "FailureAnalysis.h"
 
 MainWindow::~MainWindow()
 {

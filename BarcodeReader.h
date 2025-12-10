@@ -1,6 +1,7 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <vector>
 #include "BarcodeDetectorOpenCV.h"
 #include "CurvedBarcodeDetector.h"
 #include "ImagePreprocessor.h"
@@ -10,14 +11,13 @@
 #include "Country.h"
 #include "AbstractDecoder.h"
 
-#include "FailureAnalysis.h"
-
+// Вперед объявление вместо полного включения
 class FailureAnalysis;
 
 class BarcodeReader : public AbstractDecoder {
 public:
     BarcodeReader();
-    ~BarcodeReader();
+    ~BarcodeReader() override;  // Добавлен override
 
     BarcodeResult decode(const cv::Mat& image) override;
     BarcodeResult decode(const std::string& filename) override;
@@ -28,21 +28,21 @@ public:
     void saveToFile(const BarcodeResult& result) override;
 
 private:
-    BarcodeDetectorOpenCV opencvDetector;
-    CurvedBarcodeDetector curvedDetector;
-    ImagePreprocessor preprocessor;
-    ZBarDecoder zbarDecoder;
-    SmartDecoder smartDecoder;
+    [[no_unique_address]] BarcodeDetectorOpenCV opencvDetector;
+    [[no_unique_address]] CurvedBarcodeDetector curvedDetector;
+    [[no_unique_address]] ImagePreprocessor preprocessor;
+    [[no_unique_address]] ZBarDecoder zbarDecoder;
+    [[no_unique_address]] SmartDecoder smartDecoder;
 
     std::vector<cv::Rect> detectCurvedBarcodesOptimized(const cv::Mat& image);
     std::string filterBarcodeResult(const std::string& result);
     BarcodeResult parseZBarResult(const std::string& zbarResult);
     std::string smartDecodeWithUnwarp(const cv::Mat& frame, const cv::Rect& rect);
 
-    // ❌ УДАЛИ вот это:
+    // ❌ УДАЛИ это (дубликат, уже есть выше)
     // class FailureAnalysis;
 
-    // ✅ Оставь только friend с глобальным типом
+    // ✅ Корректное объявление friend функции
     friend FailureAnalysis analyzeDecodingFailure(
         const BarcodeReader& decoder,
         const cv::Mat& failedImage,
