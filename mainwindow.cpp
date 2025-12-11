@@ -122,7 +122,7 @@ void MainWindow::loadImage()
 
 BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
     BarcodeResult result;
-    for (auto& decoder : decoders) {
+    for (const auto& decoder : decoders) {
         try {
             result = decoder->decode(imageToScan);
             if (result.type != "Неизвестно" && !result.digits.empty()) {
