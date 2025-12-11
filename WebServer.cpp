@@ -5,13 +5,14 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QIODevice>
+#include <QDateTime>
 
 
 WebServer::WebServer(QObject* parent)
     : QObject(parent),
-    tcpServer(new QTcpServer(this))
+    tcpServer(std::make_unique<QTcpServer>(this))
 {
-    connect(tcpServer, &QTcpServer::newConnection,
+    connect(tcpServer.get(), &QTcpServer::newConnection,
             this, &WebServer::onNewConnection);
 }
 
@@ -130,12 +131,12 @@ void WebServer::onReadyRead()
                                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
                                 ".jpg";
 
-            if (QFile out(savedPath); out.open(QIODevice::WriteOnly)) {
+            QFile out(savedPath);
+            if (out.open(QIODevice::WriteOnly)) {
                 out.write(fileContent);
                 out.close();
                 emit fileSaved(savedPath);
             }
-
 
             QByteArray body = okPage();
             response = "HTTP/1.1 200 OK\r\n"
@@ -153,8 +154,10 @@ void WebServer::onReadyRead()
         }
     }
 
-    clientSocket->write(response);
-    clientSocket->disconnectFromHost();
+    if (!response.isEmpty()) {
+        clientSocket->write(response);
+        clientSocket->disconnectFromHost();
+    }
 }
 
 // Build HTML upload page with title and form

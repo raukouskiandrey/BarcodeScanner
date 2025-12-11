@@ -37,7 +37,7 @@ private:
 
     bool extractMultipartBody(const QByteArray& request, QByteArray& outBody) const;
 
-    QTcpServer* tcpServer;
+    std::unique_ptr<QTcpServer> tcpServer;
     QTcpSocket* clientSocket = nullptr;
     QString address;
     bool running = false;

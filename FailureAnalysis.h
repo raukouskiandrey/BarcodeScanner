@@ -64,8 +64,12 @@ struct ProblemDetail {
         return *this;
     }
 
-    // Деструктор
-    ~ProblemDetail() = default;
+    ~ProblemDetail() {
+        // Явное освобождение ресурсов OpenCV
+        if (!visualization.empty()) {
+            visualization.release();
+        }
+    }
 
     auto operator<=>(const ProblemDetail& other) const = default;
 
@@ -111,9 +115,16 @@ struct FailureAnalysis {
         return *this;
     }
 
-    // Деструктор
-    ~FailureAnalysis() = default;
+    ~FailureAnalysis() {
+        // Очистка вектора проблем
+        problems.clear();
 
+        // Очистка метрик
+        metrics.clear();
+
+        // Очистка строковых ресурсов
+        summary.clear();
+    }
     // Методы для форматирования
     std::string toHtmlReport() const;
     std::string toJson() const;

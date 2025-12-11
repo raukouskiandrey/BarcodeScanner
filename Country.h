@@ -10,7 +10,7 @@ private:
     QString countryName;
 
 public:
-    Country(const QString& code = "", const QString& name = "");
+    explicit Country(const QString& code = "", const QString& name = "");
 
     QString getCountryCode() const;
     QString getCountryName() const;

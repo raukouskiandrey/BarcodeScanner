@@ -14,6 +14,7 @@ QString Country::getFullInfo() const { return countryName + " (" + countryCode +
 bool Country::isValid() const { return !countryCode.isEmpty() && !countryName.isEmpty(); }
 
 // 📂 Поиск страны по первым 2–3 цифрам штрих-кода
+// 📂 Поиск страны по первым 2–3 цифрам штрих-кода
 QString Country::findCountryByBarcode(const QString& barcode)
 {
     if (barcode.isEmpty()) return QString();
@@ -24,6 +25,8 @@ QString Country::findCountryByBarcode(const QString& barcode)
 
     QString prefix3 = digits.left(3);
     QString prefix2 = digits.left(2);
+    int pref3 = prefix3.toInt();
+    int pref2 = prefix2.toInt();
 
     QString filePath = "C:/Users/rauko/Desktop/Barcode_Countries.txt";
     QFile file(filePath);
@@ -44,22 +47,25 @@ QString Country::findCountryByBarcode(const QString& barcode)
 
         if (codes.contains('-')) {
             QStringList parts = codes.split('-');
-            if (parts.size() == 2) {
-                int start = parts[0].toInt();
-                int end   = parts[1].toInt();
-                int pref3 = prefix3.toInt();
-                int pref2 = prefix2.toInt();
+            if (parts.size() != 2) continue;
 
-                if ((pref3 >= start && pref3 <= end) || (pref2 >= start && pref2 <= end)) {
-                    return countryName;
-                }
+            int start = parts[0].toInt();
+            int end   = parts[1].toInt();
+
+            // Упрощенное условие без глубокой вложенности
+            bool isInRange = (pref3 >= start && pref3 <= end) || (pref2 >= start && pref2 <= end);
+            if (isInRange) {
+                file.close();
+                return countryName;
             }
         } else {
             if (codes == prefix3 || codes == prefix2) {
+                file.close();
                 return countryName;
             }
         }
     }
 
+    file.close();
     return QString("Неизвестная страна");
 }

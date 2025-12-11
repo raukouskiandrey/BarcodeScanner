@@ -11,7 +11,7 @@ private:
     QString barcode;       // Полный штрих-код
 
 public:
-    Product(const QString& code = "", const QString& name = "", const QString& barcode = "");
+    explicit Product(const QString& code = "", const QString& name = "", const QString& barcode = "");
 
     QString getProductCode() const;
     QString getProductName() const;

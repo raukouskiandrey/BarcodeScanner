@@ -11,7 +11,7 @@ private:
     QString countryCode;        // Код страны
 
 public:
-    Manufacturer(const QString& code = "", const QString& name = "", const QString& country = "");
+     explicit Manufacturer(const QString& code = "", const QString& name = "", const QString& country = "");
 
     QString getManufacturerCode() const;
     QString getManufacturerName() const;
