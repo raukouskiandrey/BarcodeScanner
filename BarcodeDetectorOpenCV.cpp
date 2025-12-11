@@ -1,7 +1,7 @@
 #include "BarcodeDetectorOpenCV.h"
 #include <iostream>
 
-std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(const cv::Mat& frame) {
+std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(const cv::Mat& frame) const{
     std::vector<std::vector<cv::Point>> polygons;
     std::vector<cv::Point> corners;
     std::vector<std::string> decoded_info;
@@ -19,9 +19,13 @@ std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(cons
             }
         }
     }
-    catch (const std::exception& e) {
-        std::cerr << "OpenCV detection error: " << e.what() << std::endl;
+    catch (const cv::Exception& e) {
+        std::cerr << "OpenCV error: " << e.what() << std::endl;
     }
+    catch (const std::exception& e) {
+        std::cerr << "Standard error: " << e.what() << std::endl;
+    }
+
 
     return polygons;
 }

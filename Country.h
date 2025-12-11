@@ -1,4 +1,4 @@
-﻿#ifndef COUNTRY_H
+#ifndef COUNTRY_H
 #define COUNTRY_H
 
 #include <QString>

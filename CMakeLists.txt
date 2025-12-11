@@ -74,16 +74,16 @@ qt_add_executable(BarcodeScanner MANUAL_FINALIZATION
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        country.cpp
-        country.h
-        manufacturer.cpp
-        manufacturer.h
-        product.cpp
-        product.h
-        imagemanager.cpp
-        imagemanager.h
-        cameramanager.cpp
-        cameramanager.h
+        Country.cpp
+        Country.h
+        Manufacturer.cpp
+        Manufacturer.h
+        Product.cpp
+        Product.h
+        Imagemanager.cpp
+        Imagemanager.h
+        Cameramanager.cpp
+        Cameramanager.h
         BarcodeReader.h
         BarcodeDetectorOpenCV.h
         CurvedBarcodeDetector.h

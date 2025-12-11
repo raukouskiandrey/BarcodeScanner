@@ -16,8 +16,8 @@
 #include <memory>
 #include <vector>
 
-#include "cameramanager.h"
-#include "imagemanager.h"
+#include "Cameramanager.h"
+#include "Imagemanager.h"
 #include "AbstractDecoder.h"
 #include "BarcodeReader.h"
 #include "BarcodeReader2D.h"

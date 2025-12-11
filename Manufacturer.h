@@ -1,4 +1,4 @@
-﻿#ifndef MANUFACTURER_H
+#ifndef MANUFACTURER_H
 #define MANUFACTURER_H
 
 #include <QString>

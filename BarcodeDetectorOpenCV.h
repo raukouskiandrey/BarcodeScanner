@@ -4,7 +4,7 @@
 
 class BarcodeDetectorOpenCV {
 public:
-    std::vector<std::vector<cv::Point>> detectWithOpenCV(const cv::Mat& frame);
+    std::vector<std::vector<cv::Point>> detectWithOpenCV(const cv::Mat& frame) const;
 private:
     cv::barcode::BarcodeDetector opencv_detector;
 };

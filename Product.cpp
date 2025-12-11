@@ -1,4 +1,4 @@
-﻿#include "product.h"
+﻿#include "Product.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>

@@ -1,4 +1,4 @@
-﻿#include "manufacturer.h"
+﻿#include "Manufacturer.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>

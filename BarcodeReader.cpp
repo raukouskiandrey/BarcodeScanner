@@ -1,7 +1,7 @@
 ﻿#include "BarcodeReader.h"
-#include "country.h"
-#include "manufacturer.h"
-#include "product.h"
+#include "Country.h"
+#include "Manufacturer.h"
+#include "Product.h"
 #include <iostream>
 #include <fstream>
 

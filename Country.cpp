@@ -1,4 +1,4 @@
-﻿#include "country.h"
+﻿#include "Country.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>

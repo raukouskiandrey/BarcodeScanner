@@ -1,7 +1,7 @@
 #include "BarcodeDetectorOpenCV2D.h"
 #include <iostream>
 
-std::vector<std::string> BarcodeDetectorOpenCV2D::detectAndDecode(const cv::Mat& frame) {
+std::vector<std::string> BarcodeDetectorOpenCV2D::detectAndDecode(const cv::Mat& frame) const{
     std::vector<std::string> results;
 
     try {
@@ -13,9 +13,13 @@ std::vector<std::string> BarcodeDetectorOpenCV2D::detectAndDecode(const cv::Mat&
             std::cout << "QR/2D detected: " << decoded << std::endl;
         }
     }
-    catch (const std::exception& e) {
+    catch (const cv::Exception& e) {
         std::cerr << "OpenCV 2D detection error: " << e.what() << std::endl;
     }
+    catch (const std::exception& e) {
+        std::cerr << "Standard error: " << e.what() << std::endl;
+    }
+
 
     return results;
 }

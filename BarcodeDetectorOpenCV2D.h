@@ -6,7 +6,7 @@
 
 class BarcodeDetectorOpenCV2D {
 public:
-    std::vector<std::string> detectAndDecode(const cv::Mat& frame);
+    std::vector<std::string> detectAndDecode(const cv::Mat& frame) const;
 private:
     cv::QRCodeDetector qrDetector;
 };
