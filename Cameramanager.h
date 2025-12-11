@@ -31,11 +31,11 @@ private slots:
 private:
     bool tryOpenCameraWithBackend(int cameraIndex, int backend);
 
-    cv::VideoCapture* videoCapture = nullptr;  // обычный указатель
-    QTimer* frameTimer = nullptr;              // обычный указатель
+    cv::VideoCapture* videoCapture = nullptr;
+    QTimer* frameTimer = nullptr;
     bool cameraActive = false;
     bool mirrorMode = true;
     cv::Mat currentFrame;
 };
 
-#endif // CAMERAMANAGER_H
+#endif
