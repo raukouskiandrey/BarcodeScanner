@@ -5,8 +5,8 @@
 #include <iostream>
 #include <fstream>
 
-BarcodeReader2D::BarcodeReader2D() {}
-BarcodeReader2D::~BarcodeReader2D() {}
+BarcodeReader2D::BarcodeReader2D() = default;
+BarcodeReader2D::~BarcodeReader2D() = default;
 
 BarcodeResult BarcodeReader2D::decode(const cv::Mat& image) {
     if (image.empty()) {
