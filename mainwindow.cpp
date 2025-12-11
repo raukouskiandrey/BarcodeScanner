@@ -120,6 +120,20 @@ void MainWindow::loadImage()
     }
 }
 
+BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
+    BarcodeResult result;
+    for (auto& decoder : decoders) {
+        try {
+            result = decoder->decode(imageToScan);
+            if (result.type != "Неизвестно" && !result.digits.empty()) {
+                return result;
+            }
+        } catch (const DecodeException& e) {
+            resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
+        }
+    }
+    throw DecodeException("Ни один декодер не распознал штрих-код");
+}
 
 void MainWindow::scanBarcode() {
     progressBar->setVisible(true);
@@ -136,26 +150,7 @@ void MainWindow::scanBarcode() {
 
         resultText->append("🔍 Начинаю сканирование...");
 
-        BarcodeResult result;
-        bool success = false;
-
-        try {
-            for (auto& decoder : decoders) {
-                result = decoder->decode(imageToScan);
-                if (result.type != "Неизвестно" && !result.digits.empty()) {
-                    success = true;
-                    break;
-                }
-            }
-        }
-        catch (const DecodeException& e) {
-            resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
-        }
-
-        if (!success) {
-            throw DecodeException("Ни один декодер не распознал штрих-код");
-        }
-
+        BarcodeResult result = decodeImageWithDecoders(imageToScan);
         processBarcodeResult(result);
     }
     catch (const DecodeException& e) {
@@ -191,7 +186,6 @@ void MainWindow::scanBarcode() {
 
     progressBar->setVisible(false);
 }
-
 
 void MainWindow::clearResults()
 {
@@ -263,7 +257,7 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
     if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
             cameraBuffer << frame;
-        } catch (const std::exception& e) {
+        } catch (const std::runtime_error& e) {
             resultText->append(QString("⚠️ Ошибка буфера: ") + e.what());
             return;
         }
@@ -487,5 +481,6 @@ void MainWindow::openPhoneDialog()
     });
     dialog.exec();
 }
+
 
 

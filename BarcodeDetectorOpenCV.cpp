@@ -21,9 +21,8 @@ std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(cons
     }
     catch (const cv::Exception& e) {
         std::cerr << "OpenCV error: " << e.what() << std::endl;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Standard error: " << e.what() << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Runtime error: " << e.what() << std::endl;
     }
 
 

@@ -14,12 +14,10 @@ std::vector<std::string> BarcodeDetectorOpenCV2D::detectAndDecode(const cv::Mat&
         }
     }
     catch (const cv::Exception& e) {
-        std::cerr << "OpenCV 2D detection error: " << e.what() << std::endl;
+        std::cerr << "OpenCV 2D error: " << e.what() << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Runtime error: " << e.what() << std::endl;
     }
-    catch (const std::exception& e) {
-        std::cerr << "Standard error: " << e.what() << std::endl;
-    }
-
 
     return results;
 }

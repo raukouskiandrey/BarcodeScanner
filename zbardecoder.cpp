@@ -2,6 +2,8 @@
 #include "BarcodeResult.h"
 #include <iostream>
 
+
+
 ZBarDecoder::ZBarDecoder() {
     zbar_scanner.set_config(zbar::ZBAR_NONE, zbar::ZBAR_CFG_ENABLE, 1);
 }
@@ -45,7 +47,7 @@ std::string ZBarDecoder::decodeWithZBar(const cv::Mat& roi) {
 
                 // ???????????? ???????????? ????? ?????-?????
                 // (????????, EAN-13/8 ????? ??????? ??? QR-CODE ??? ???????)
-                if (type_name.find("EAN") != std::string::npos) {
+                if (type_name.find("EAN") != std::string::npos)      {
                     bestResult = currentResult;
                 }
             }
@@ -58,8 +60,10 @@ std::string ZBarDecoder::decodeWithZBar(const cv::Mat& roi) {
             }
         }
     }
-    catch (const std::exception& e) {
+    catch (const zbar::Exception& e) {
         std::cerr << "ZBar error: " << e.what() << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Runtime error: " << e.what() << std::endl;
     }
     return "";
 }
