@@ -84,19 +84,19 @@ void WebServer::onReadyRead()
     // Накапливаем данные
     requestBuffer.append(clientSocket->readAll());
 
-    // Если Content-Length ещё не извлечён — пробуем найти его
+    // Если Content-Length ещё не извлечён – пробуем найти его
     if (expectedLength == -1) {
         int pos = requestBuffer.indexOf("Content-Length:");
-        if (pos != -1) {
-            int end = requestBuffer.indexOf("\r\n", pos);
-            if (end != -1) {
-                QByteArray lenLine = requestBuffer.mid(pos, end - pos);
-                QList<QByteArray> parts = lenLine.split(' ');
-                if (parts.size() >= 2) {
-                    expectedLength = parts.last().toLongLong();
-                }
-            }
-        }
+        if (pos == -1) return;
+
+        int end = requestBuffer.indexOf("\n", pos);
+        if (end == -1) return;
+
+        QByteArray lenLine = requestBuffer.mid(pos, end - pos);
+        QList<QByteArray> parts = lenLine.split(' ');
+        if (parts.size() < 2) return;
+
+        expectedLength = parts.last().toLongLong();
     }
 
     // Проверяем: получили ли мы всё тело запроса
