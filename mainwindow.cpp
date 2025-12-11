@@ -213,10 +213,10 @@ void MainWindow::saveBarcode()
 {
     if (!lastBarcodeResult.isEmpty()) {
         try {
-            for (auto& decoder : decoders) {
+            for (const auto& decoder : decoders) {
                 if (decoder->getDecoderName() == lastResult.type ||
                     (lastResult.type.find("QR") != std::string::npos && decoder->getDecoderName() == "BarcodeReader2D")) {
-                    decoder->saveToFile(lastResult); // ⚠️ может выбросить FileException
+                    decoder->saveToFile(lastResult);
                     break;
                 }
             }
@@ -271,13 +271,13 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 
     // Проверяем все кадры в контейнере
     try {
-        for (auto& img : cameraBuffer) {
-            for (auto& decoder : decoders) {
+        for (const auto& img : cameraBuffer) {
+            for (const auto& decoder : decoders) {
                 BarcodeResult result = decoder->decode(img);
                 if (result.type != "Неизвестно" && !result.digits.empty()) {
                     processBarcodeResult(result);
-                    cameraBuffer.clear();   // очищаем контейнер после успеха
-                    frameCounter = 0;       // сбрасываем счётчик
+                    cameraBuffer.clear();
+                    frameCounter = 0;
                     return;
                 }
             }
@@ -456,8 +456,7 @@ void MainWindow::openPhoneDialog()
     connect(server, &WebServer::fileSaved, this, [&](const QString& path) {
         resultText->append("📂 Файл сохранён: " + path);
 
-        cv::Mat mat = cv::imread(path.toStdString());
-        if (!mat.empty()) {
+        if (cv::Mat mat = cv::imread(path.toStdString()); !mat.empty()) {
             displayImage(mat);
         } else {
             resultText->append("❌ Ошибка: OpenCV не смог загрузить изображение");
@@ -465,8 +464,8 @@ void MainWindow::openPhoneDialog()
 
         try {
             BarcodeResult result;
-            for (auto& decoder : decoders) {
-                result = decoder->decode(path.toStdString()); // ⚠️ может выбросить исключение
+            for (const auto& decoder : decoders) {
+                result = decoder->decode(path.toStdString());
                 if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
                     break;
                 }
