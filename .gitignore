@@ -1,6 +1,7 @@
 # CMake build directories
 build/
 cmake-build-*/
+build/Desktop_Qt_6_10_0_static_MinGW_w64_MINGW64_MSYS2-Debug/
 
 # Qt Creator user files
 *.autosave
@@ -9,6 +10,7 @@ cmake-build-*/
 *.pro.user
 *.pro.user.*
 *.qbs.user
+*.qbs.user.*
 *.qbs.user.*
 
 # Qt Creator backup files
