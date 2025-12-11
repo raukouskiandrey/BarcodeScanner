@@ -131,8 +131,8 @@ void WebServer::onReadyRead()
                                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
                                 ".jpg";
 
-            QFile out(savedPath);
-            if (out.open(QIODevice::WriteOnly)) {
+
+            if (QFile out(savedPath); out.open(QIODevice::WriteOnly)) {
                 out.write(fileContent);
                 out.close();
                 emit fileSaved(savedPath);

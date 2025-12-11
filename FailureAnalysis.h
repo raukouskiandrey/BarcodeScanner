@@ -20,7 +20,6 @@ enum class ProblemType {
     UNKNOWN
 };
 
-// Детали проблемы
 struct ProblemDetail {
     ProblemType type;
     std::string description;
@@ -37,45 +36,51 @@ struct ProblemDetail {
     ProblemDetail(ProblemType t, std::string desc, std::string c,
                   std::string rec, double conf, cv::Mat viz = cv::Mat()) noexcept
         : type(t), description(std::move(desc)), cause(std::move(c)),
-        recommendation(std::move(rec)), confidence(conf), visualization(std::move(viz)) {}
+        recommendation(std::move(rec)), confidence(conf),
+        visualization(std::move(viz)) {}
 
-    // Конструктор копирования
-    ProblemDetail(const ProblemDetail& other) = default;
+    // Кастомный конструктор копирования
+    ProblemDetail(const ProblemDetail& other)
+        : type(other.type),
+        description(other.description),
+        cause(other.cause),
+        recommendation(other.recommendation),
+        confidence(other.confidence)
+    {
+        // cv::Mat имеет "умное" управление памятью (copy-on-write),
+        // но если нужно гарантировать отдельную копию — используем clone()
+        visualization = other.visualization.empty() ? cv::Mat() : other.visualization.clone();
+    }
 
-    // Оператор присваивания копированием
-    ProblemDetail& operator=(const ProblemDetail& other) = default;
-
-    // Конструктор перемещения (noexcept)
-    ProblemDetail(ProblemDetail&& other) noexcept
-        : type(other.type), description(std::move(other.description)),
-        cause(std::move(other.cause)), recommendation(std::move(other.recommendation)),
-        confidence(other.confidence), visualization(std::move(other.visualization)) {}
-
-    // Оператор присваивания перемещением (noexcept)
-    ProblemDetail& operator=(ProblemDetail&& other) noexcept {
+    // Кастомный оператор присваивания копированием
+    ProblemDetail& operator=(const ProblemDetail& other) {
         if (this != &other) {
             type = other.type;
-            description = std::move(other.description);
-            cause = std::move(other.cause);
-            recommendation = std::move(other.recommendation);
+            description = other.description;
+            cause = other.cause;
+            recommendation = other.recommendation;
             confidence = other.confidence;
-            visualization = std::move(other.visualization);
+            visualization = other.visualization.empty() ? cv::Mat() : other.visualization.clone();
         }
         return *this;
     }
 
+    // Конструктор перемещения (noexcept)
+    ProblemDetail(ProblemDetail&& other) noexcept = default;
+
+    // Оператор присваивания перемещением (noexcept)
+    ProblemDetail& operator=(ProblemDetail&& other) noexcept = default;
+
     ~ProblemDetail() {
-        // Явное освобождение ресурсов OpenCV
         if (!visualization.empty()) {
             visualization.release();
         }
     }
 
     auto operator<=>(const ProblemDetail& other) const = default;
-
 };
 
-// Полный анализ
+
 struct FailureAnalysis {
     std::vector<ProblemDetail> problems;
     ProblemDetail primaryProblem;
@@ -87,44 +92,40 @@ struct FailureAnalysis {
     // Конструктор по умолчанию
     FailureAnalysis() noexcept = default;
 
-    // Конструктор копирования
-    FailureAnalysis(const FailureAnalysis& other) = default;
-
-    // Конструктор перемещения (noexcept)
-    FailureAnalysis(FailureAnalysis&& other) noexcept
-        : problems(std::move(other.problems)),
-        primaryProblem(std::move(other.primaryProblem)),
+    // Кастомный конструктор копирования
+    FailureAnalysis(const FailureAnalysis& other)
+        : problems(other.problems), // vector копирует элементы (использует коп. конструктор ProblemDetail)
+        primaryProblem(other.primaryProblem),
         overallScore(other.overallScore),
         isFixable(other.isFixable),
-        summary(std::move(other.summary)),
-        metrics(std::move(other.metrics)) {}
+        summary(other.summary),
+        metrics(other.metrics) {}
 
-    // Оператор присваивания копированием
-    FailureAnalysis& operator=(const FailureAnalysis& other) = default;
-
-    // Оператор присваивания перемещением (noexcept)
-    FailureAnalysis& operator=(FailureAnalysis&& other) noexcept {
+    // Кастомный оператор присваивания копированием
+    FailureAnalysis& operator=(const FailureAnalysis& other) {
         if (this != &other) {
-            problems = std::move(other.problems);
-            primaryProblem = std::move(other.primaryProblem);
+            problems = other.problems;          // копирование вектора
+            primaryProblem = other.primaryProblem; // копирование ProblemDetail
             overallScore = other.overallScore;
             isFixable = other.isFixable;
-            summary = std::move(other.summary);
-            metrics = std::move(other.metrics);
+            summary = other.summary;
+            metrics = other.metrics;            // копирование map
         }
         return *this;
     }
 
+    // Конструктор перемещения (noexcept)
+    FailureAnalysis(FailureAnalysis&& other) noexcept = default;
+
+    // Оператор присваивания перемещением (noexcept)
+    FailureAnalysis& operator=(FailureAnalysis&& other) noexcept = default;
+
     ~FailureAnalysis() {
-        // Очистка вектора проблем
         problems.clear();
-
-        // Очистка метрик
         metrics.clear();
-
-        // Очистка строковых ресурсов
         summary.clear();
     }
+
     // Методы для форматирования
     std::string toHtmlReport() const;
     std::string toJson() const;
@@ -134,6 +135,7 @@ struct FailureAnalysis {
     static double calculateSharpness(const cv::Mat& gray);
     static double calculateNoiseLevel(const cv::Mat& gray);
 };
+
 
 class BarcodeReader;
 
