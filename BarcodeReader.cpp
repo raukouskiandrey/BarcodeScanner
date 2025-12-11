@@ -114,7 +114,7 @@ std::string BarcodeReader::findProduct(const QString& barcode) {
 
 std::string BarcodeReader::findCountry(std::string_view digits) {
     if (digits.length() < 3) return "Неизвестно";
-    std::string country_code = std::string(digits.substr(0, 3));
+    auto country_code = std::string(digits.substr(0, 3));
     try {
         QString countryName = Country::findCountryByBarcode(QString::fromStdString(country_code));
         return countryName.isEmpty() ? "Неизвестная страна (" + country_code + ")" : countryName.toStdString();
@@ -126,7 +126,7 @@ std::string BarcodeReader::findCountry(std::string_view digits) {
 
 std::string BarcodeReader::findManufacturer(std::string_view digits) {
     if (digits.length() < 7) return "Н/Д";
-    std::string manufacturer_code = std::string(digits.substr(3, 4));
+    auto manufacturer_code = std::string(digits.substr(3, 4));
     try {
         QString manufacturerName = Manufacturer::findManufacturerByCode(QString::fromStdString(manufacturer_code));
         return manufacturerName.isEmpty() ? "Неизвестный производитель (" + manufacturer_code + ")" : manufacturerName.toStdString();
@@ -138,7 +138,7 @@ std::string BarcodeReader::findManufacturer(std::string_view digits) {
 
 std::string BarcodeReader::findAdditionalProduct(std::string_view digits) {
     if (digits.length() < 7) return "Н/Д";
-    std::string product_code = std::string(digits.substr(7, 5));
+    auto product_code = std::string(digits.substr(7, 5));
     try {
         QString productName = Product::findProductByBarcode(QString::fromStdString(product_code));
         return productName.isEmpty() ? "Товар (" + product_code + ")" : productName.toStdString();
@@ -171,12 +171,12 @@ std::string BarcodeReader::normalizeDigits(const BarcodeResult& result) {
 std::string BarcodeReader::findCountryForEAN8(std::string_view digits) {
     try {
         if (digits.length() >= 3) {
-            std::string code = std::string(digits.substr(0, 3));
+            auto code = std::string(digits.substr(0, 3));
             QString countryName = Country::findCountryByBarcode(QString::fromStdString(code));
             if (!countryName.isEmpty()) return countryName.toStdString();
         }
         if (digits.length() >= 2) {
-            std::string code = std::string(digits.substr(0, 2));
+            auto code = std::string(digits.substr(0, 2));
             if (QString countryName = Country::findCountryByBarcode(QString::fromStdString(code)); !countryName.isEmpty()) return countryName.toStdString();
             return "Неизвестная страна (" + code + ")";
         }
@@ -190,10 +190,10 @@ std::string BarcodeReader::findCountryForEAN8(std::string_view digits) {
 // Поиск товара для EAN-8
 std::string BarcodeReader::findProductForEAN8(std::string_view digits) {
     if (digits.length() >= 5) {
-        std::string product_code = std::string(digits.substr(2, 5));
+        auto product_code = std::string(digits.substr(2, 5));
         return "Товар (" + product_code + ")";
     } else if (digits.length() >= 3) {
-        std::string product_code = std::string(digits.substr(2));
+        auto product_code = std::string(digits.substr(2));
         return "Товар (" + product_code + ")";
     }
     return "Н/Д";
