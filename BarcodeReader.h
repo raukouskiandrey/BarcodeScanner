@@ -27,6 +27,7 @@ public:
     BarcodeResult createDetailedResult(const BarcodeResult& basicResult);
     void saveToFile(const BarcodeResult& result) override;
 
+
 private:
     [[no_unique_address]] BarcodeDetectorOpenCV opencvDetector;
     [[no_unique_address]] CurvedBarcodeDetector curvedDetector;
@@ -39,10 +40,17 @@ private:
     BarcodeResult parseZBarResult(const std::string& zbarResult);
     std::string smartDecodeWithUnwarp(const cv::Mat& frame, const cv::Rect& rect);
 
-    // ❌ УДАЛИ это (дубликат, уже есть выше)
-    // class FailureAnalysis;
+    std::string findProduct(const QString& barcode);
+    std::string findCountry(const std::string& digits);
+    std::string findManufacturer(const std::string& digits);
+    std::string findAdditionalProduct(const std::string& digits);
 
-    // ✅ Корректное объявление friend функции
+    std::string findCountryForEAN8(const std::string& digits);
+    std::string findProductForEAN8(const std::string& digits);
+
+    bool isEAN13orUPCA(const BarcodeResult& result);
+    bool isEAN8(const BarcodeResult& result);
+    std::string normalizeDigits(const BarcodeResult& result);
     friend FailureAnalysis analyzeDecodingFailure(
         const BarcodeReader& decoder,
         const cv::Mat& failedImage,
