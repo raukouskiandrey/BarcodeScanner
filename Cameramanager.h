@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QTimer>
 #include <opencv2/opencv.hpp>
+#include <memory>
 
 class CameraManager : public QObject
 {
@@ -30,10 +31,10 @@ private slots:
 
 private:
     bool tryOpenCameraWithBackend(int cameraIndex, int backend);
-    cv::VideoCapture* videoCapture = nullptr;
+    std::unique_ptr<cv::VideoCapture> videoCapture;
+    std::unique_ptr<QTimer> frameTimer;
     bool cameraActive = false;
     bool mirrorMode = true;
-    QTimer* frameTimer = nullptr;
     cv::Mat currentFrame;
 };
 
