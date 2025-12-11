@@ -4,9 +4,9 @@
 
 CameraManager::CameraManager(QObject* parent)
     : QObject(parent)
-    , frameTimer(std::make_unique<QTimer>(this))
 {
-    connect(frameTimer.get(), &QTimer::timeout, this, &CameraManager::updateFrame);
+    frameTimer = new QTimer(this);
+    connect(frameTimer, &QTimer::timeout, this, &CameraManager::updateFrame);
 }
 
 
@@ -32,9 +32,14 @@ bool CameraManager::startCamera(int cameraIndex) {
 
 bool CameraManager::tryOpenCameraWithBackend(int cameraIndex, int backend)
 {
-    videoCapture = std::make_unique<cv::VideoCapture>(cameraIndex, backend);
+    if (videoCapture) {
+        delete videoCapture;
+    }
+
+    videoCapture = new cv::VideoCapture(cameraIndex, backend);
 
     if (videoCapture->isOpened()) {
+        // Проверяем, что камера действительно передает изображение
         cv::Mat testFrame;
         *videoCapture >> testFrame;
         if (!testFrame.empty()) {
@@ -42,7 +47,8 @@ bool CameraManager::tryOpenCameraWithBackend(int cameraIndex, int backend)
         }
     }
 
-    videoCapture.reset();
+    delete videoCapture;
+    videoCapture = nullptr;
     return false;
 }
 
@@ -56,7 +62,8 @@ void CameraManager::stopCamera()
         if (videoCapture->isOpened()) {
             videoCapture->release();
         }
-        videoCapture.reset();
+        delete videoCapture;
+        videoCapture = nullptr;
     }
 
     if (cameraActive) {
@@ -88,7 +95,7 @@ void CameraManager::updateFrame()
 
         if (!frame.empty()) {
             if (mirrorMode) {
-                cv::flip(frame, frame, 1);
+                cv::flip(frame, frame, 1); // Горизонтальное отражение
             }
 
             currentFrame = frame.clone();
