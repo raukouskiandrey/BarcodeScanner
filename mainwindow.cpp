@@ -139,17 +139,17 @@ void MainWindow::scanBarcode() {
         BarcodeResult result;
         bool success = false;
 
-        for (auto& decoder : decoders) {
-            try {
+        try {
+            for (auto& decoder : decoders) {
                 result = decoder->decode(imageToScan);
                 if (result.type != "Неизвестно" && !result.digits.empty()) {
                     success = true;
                     break;
                 }
             }
-            catch (const DecodeException& e) {
-                resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
-            }
+        }
+        catch (const DecodeException& e) {
+            resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
         }
 
         if (!success) {
@@ -165,7 +165,7 @@ void MainWindow::scanBarcode() {
                                      ? cameraManager->getCurrentFrame()
                                      : imageManager->getCurrentImage();
 
-        BarcodeReader* reader = dynamic_cast<BarcodeReader*>(decoders[0].get());
+        auto* reader = dynamic_cast<BarcodeReader*>(decoders[0].get());
         if (reader) {
             FailureAnalysis analysis = analyzeDecodingFailure(*reader, imageToAnalyze, "");
             resultText->append("📋 Диагностика ошибки:");
@@ -391,10 +391,9 @@ void MainWindow::processBarcodeResult(const BarcodeResult& result)
         resultText->append("🏭 Код производителя: " + QString::fromStdString(result.manufacturerCode));
     }
     // Для 1D штрих-кодов выводим код товара, для 2D — нет
-    if (result.type != "QR/DataMatrix" && result.type != "QR-Code") {
-        if (!result.productCode.empty() && result.productCode != "Н/Д") {
-            resultText->append("📦 Код товара: " + QString::fromStdString(result.productCode));
-        }
+    if (result.type != "QR/DataMatrix" && result.type != "QR-Code" &&
+        !result.productCode.empty() && result.productCode != "Н/Д") {
+        resultText->append("📦 Код товара: " + QString::fromStdString(result.productCode));
     }
 
 
@@ -417,13 +416,13 @@ void MainWindow::openPhoneDialog()
     QDialog dialog(this);
     dialog.setWindowTitle("📱 Загрузка с телефона");
 
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
-    QPushButton* startBtn = new QPushButton("🚀 Запустить веб-сервер", &dialog);
-    QPushButton* stopBtn  = new QPushButton("⛔ Выключить веб-сервер", &dialog); // 🔴 новая кнопка
-    QPushButton* copyBtn  = new QPushButton("📋 Скопировать адрес", &dialog);
-    QLabel* statusLabel   = new QLabel("Сервер не запущен", &dialog);
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* startBtn = new QPushButton("🚀 Запустить веб-сервер", &dialog);
+    auto* stopBtn = new QPushButton("⛔ Выключить веб-сервер", &dialog);
+    auto* copyBtn = new QPushButton("📋 Скопировать адрес", &dialog);
+    auto* statusLabel = new QLabel("Сервер не запущен", &dialog);
 
-    WebServer* server = new WebServer(&dialog);
+    auto* server = new WebServer(&dialog);
 
     layout->addWidget(startBtn);
     layout->addWidget(stopBtn);
@@ -453,24 +452,34 @@ void MainWindow::openPhoneDialog()
         QMessageBox::information(&dialog, "Скопировано", "Адрес скопирован!");
     });
 
-    connect(server, &WebServer::fileSaved, this, [&](const QString& path) {
+    // Заменяем большую лямбду на несколько маленьких:
+    connect(server, &WebServer::fileSaved, this, [this](const QString& path) {
+        // Часть 1: Загрузка и отображение
         resultText->append("📂 Файл сохранён: " + path);
 
-        if (cv::Mat mat = cv::imread(path.toStdString()); !mat.empty()) {
+        cv::Mat mat = cv::imread(path.toStdString());
+        if (!mat.empty()) {
             displayImage(mat);
         } else {
             resultText->append("❌ Ошибка: OpenCV не смог загрузить изображение");
+            return;
         }
+    });
 
+    // Вторая лямбда для декодирования
+    connect(server, &WebServer::fileSaved, this, [this](const QString& path) {
         try {
             BarcodeResult result;
             for (const auto& decoder : decoders) {
                 result = decoder->decode(path.toStdString());
                 if (result.type != "Неизвестно" && result.type != "Ошибка" && !result.digits.empty()) {
-                    break;
+                    processBarcodeResult(result);
+                    return;
                 }
             }
-            processBarcodeResult(result);
+
+            QMessageBox::warning(this, "Ошибка при распознавании",
+                                 "Не удалось распознать штрих-код на изображении");
         }
         catch (const BarcodeException& e) {
             QMessageBox::warning(this, "Ошибка при распознавании", e.what());
