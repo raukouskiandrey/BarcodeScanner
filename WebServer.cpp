@@ -132,12 +132,12 @@ void WebServer::onReadyRead()
                                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
                                 ".jpg";
 
-            QFile out(savedPath);
-            if (out.open(QIODevice::WriteOnly)) {
+            if (QFile out(savedPath); out.open(QIODevice::WriteOnly)) {
                 out.write(fileContent);
                 out.close();
                 emit fileSaved(savedPath);
             }
+
 
             QByteArray body = okPage();
             response = "HTTP/1.1 200 OK\r\n"
@@ -215,9 +215,9 @@ bool WebServer::extractMultipartBody(const QByteArray& request, QByteArray& outB
     if (bpos == -1) return false;
 
     QString boundary = QString::fromUtf8(request.mid(bpos + 9));
-    int eol = boundary.indexOf("\r\n");
-    if (eol != -1) boundary = boundary.left(eol);
-    boundary = boundary.trimmed();
+    if (int eol = boundary.indexOf("\r\n"); eol != -1)
+        boundary = boundary.left(eol);
+
 
     QByteArray boundaryPrefix = "--" + boundary.toUtf8();
     QByteArray partEnd        = "\r\n--" + boundary.toUtf8();
@@ -229,8 +229,8 @@ bool WebServer::extractMultipartBody(const QByteArray& request, QByteArray& outB
         int lineEnd = request.indexOf("\r\n", dispoPos);
         if (lineEnd == -1) break;
 
-        QByteArray dispoLine = request.mid(dispoPos, lineEnd - dispoPos);
-        if (dispoLine.contains("form-data") && dispoLine.contains("filename=")) {
+        if (QByteArray dispoLine = request.mid(dispoPos, lineEnd - dispoPos);
+            dispoLine.contains("form-data") && dispoLine.contains("filename=")) {
             break;
         }
         dispoPos = request.indexOf("Content-Disposition:", lineEnd);

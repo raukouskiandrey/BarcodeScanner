@@ -1,0 +1,107 @@
+# Игнорировать временные файлы Visual Studio
+## Получено из официальных источников :cite[1]:cite[3]
+
+# Файлы пользовательских настроек
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Файлы кэша IntelliSense
+*.ncb
+*.aps
+
+# Временные файлы
+*.tmp
+*.tmp_proj
+*.log
+*.tlog
+
+# Результаты сборки
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Кэш Visual Studio
+.vs/
+*.opensdf
+*.sdf
+ipch/
+*.VC.db
+*.VC.VC.opendb
+
+# Файлы предкомпилированных заголовков
+*.pch
+*.ipch
+
+# Файлы проектов
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Файлы решений
+*.sln
+
+# Профилировщик Visual Studio
+*.psess
+*.vsp
+*.vspx
+
+# Файлы TFS
+$tf/
+
+# Файлы Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Файлы TeamCity
+_TeamCity*
+
+# Временные файлы Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Файлы установщика Windows
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Резервные копии
+*~
+*.bak
+*.old
+
+# Корзина
+$RECYCLE.BIN/
+
+# Прочие временные файлы
+*.cachefile
+*.dbmdl
+*.jfm
+
+# Игнорировать упакованные файлы
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Игнорировать файлы пакетов NuGet (если используются)
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/

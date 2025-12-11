@@ -12,7 +12,7 @@ class WebServer : public QObject
 
 public:
     explicit WebServer(QObject* parent = nullptr);
-    ~WebServer();
+    ~WebServer() override;
 
     bool startServer(quint16 port = 8080);
     void stopServer();
@@ -42,8 +42,6 @@ private:
     QTcpSocket* clientSocket;
     QString address;
     bool running;
-
-private:
     QByteArray requestBuffer;
     qint64 expectedLength = -1;
 };
