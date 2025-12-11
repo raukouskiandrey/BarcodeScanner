@@ -11,7 +11,7 @@ class CameraManager : public QObject
 
 public:
     explicit CameraManager(QObject* parent = nullptr);
-    ~CameraManager();
+    ~CameraManager() override;
 
     bool startCamera(int cameraIndex = 0);
     void stopCamera();

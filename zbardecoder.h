@@ -13,5 +13,5 @@ public:
 
     std::string decodeWithZBar(const cv::Mat& roi);
     std::string filterBarcodeResult(const std::string& result);
-    BarcodeResult parseZBarResult(const std::string& zbarResult);
+    BarcodeResult parseZBarResult(std::string_view zbarResult);
 };

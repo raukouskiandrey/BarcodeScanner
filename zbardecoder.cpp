@@ -51,7 +51,7 @@ std::string ZBarDecoder::filterBarcodeResult(const std::string& result) {
     return result;
 }
 
-BarcodeResult ZBarDecoder::parseZBarResult(const std::string& zbarResult) {
+BarcodeResult ZBarDecoder::parseZBarResult(std::string_view zbarResult){
     BarcodeResult result;
     result.type = "Неизвестно";
 
@@ -59,16 +59,15 @@ BarcodeResult ZBarDecoder::parseZBarResult(const std::string& zbarResult) {
         return result;
     }
 
-    // Парсим результат ZBar
-    size_t colon_pos = zbarResult.find(":");
-    if (colon_pos != std::string::npos) {
-        std::string type = zbarResult.substr(0, colon_pos);
-        std::string digits = zbarResult.substr(colon_pos + 2); // +2 чтобы пропустить ": "
+    if (size_t colon_pos = zbarResult.find(":"); colon_pos != std::string::npos) {
+        std::string type = std::string(zbarResult.substr(0, colon_pos));
+        std::string digits = std::string(zbarResult.substr(colon_pos + 2));
 
         result.type = type;
         result.digits = digits;
         result.fullResult = zbarResult;
     }
+
     else {
         // Если формат нестандартный, пытаемся извлечь данные
         result.type = "Unknown Format";
