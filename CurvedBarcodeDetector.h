@@ -4,7 +4,7 @@
 
 class CurvedBarcodeDetector {
 public:
-    std::vector<cv::Rect> detectCurvedBarcodesOptimized(const cv::Mat& frame);
+    std::vector<cv::Rect> detectCurvedBarcodesOptimized(const cv::Mat& frame) const;
 
 private:
     std::vector<cv::Rect> extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size) const;

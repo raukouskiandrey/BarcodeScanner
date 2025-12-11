@@ -1,7 +1,7 @@
 #include "CurvedBarcodeDetector.h"
 #include <iostream>
 
-std::vector<cv::Rect> CurvedBarcodeDetector::detectCurvedBarcodesOptimized(const cv::Mat& frame) {
+std::vector<cv::Rect> CurvedBarcodeDetector::detectCurvedBarcodesOptimized(const cv::Mat& frame) const{
     std::vector<cv::Rect> curved_regions;
 
     cv::Mat small_frame;
