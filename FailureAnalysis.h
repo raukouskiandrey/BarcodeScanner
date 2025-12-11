@@ -4,6 +4,7 @@
 #include <map>
 #include <opencv2/opencv.hpp>
 #include "BarcodeReader.h"
+#include <compare>
 
 // Тип проблемы
 enum class ProblemType {
@@ -66,9 +67,8 @@ struct ProblemDetail {
     // Деструктор
     ~ProblemDetail() = default;
 
-    bool operator<(const ProblemDetail& other) const {
-        return confidence > other.confidence; // сортировка по уверенности
-    }
+    auto operator<=>(const ProblemDetail& other) const = default;
+
 };
 
 // Полный анализ
