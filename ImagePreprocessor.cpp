@@ -1,6 +1,6 @@
 #include "ImagePreprocessor.h"
 
-cv::Mat ImagePreprocessor::enhanceContrast(const cv::Mat& input) {
+cv::Mat ImagePreprocessor::enhanceContrast(const cv::Mat& input) const {
 
     cv::Mat lab;
     cv::cvtColor(input, lab, cv::COLOR_BGR2Lab);
@@ -20,7 +20,7 @@ cv::Mat ImagePreprocessor::enhanceContrast(const cv::Mat& input) {
 
 
 
-cv::Mat ImagePreprocessor::enhanceSharpness(const cv::Mat& input, double strength) {
+cv::Mat ImagePreprocessor::enhanceSharpness(const cv::Mat& input, double strength) const{
 
     cv::Mat blurred;
     cv::Mat sharpened;

@@ -16,7 +16,7 @@ public:
     bool startCamera(int cameraIndex = 0);
     void stopCamera();
     bool isCameraActive() const;
-    cv::Mat getCurrentFrame();
+    cv::Mat getCurrentFrame() const;
     void setMirrorMode(bool enabled);
 
 signals:
@@ -30,10 +30,10 @@ private slots:
 
 private:
     bool tryOpenCameraWithBackend(int cameraIndex, int backend);
-    cv::VideoCapture* videoCapture;
-    QTimer* frameTimer;
-    bool cameraActive;
-    bool mirrorMode;
+    cv::VideoCapture* videoCapture = nullptr;
+    bool cameraActive = false;
+    bool mirrorMode = true;
+    QTimer* frameTimer = nullptr;
     cv::Mat currentFrame;
 };
 

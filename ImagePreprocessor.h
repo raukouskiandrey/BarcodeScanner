@@ -3,6 +3,6 @@
 
 class ImagePreprocessor {
 public:
-    cv::Mat enhanceContrast(const cv::Mat& input);
-    cv::Mat enhanceSharpness(const cv::Mat& input, double strength);
+    cv::Mat enhanceContrast(const cv::Mat& input) const;
+    cv::Mat enhanceSharpness(const cv::Mat& input, double strength) const;
 };

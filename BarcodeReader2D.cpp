@@ -29,7 +29,7 @@ BarcodeResult BarcodeReader2D::decode(const std::string& filename) {
     return decode(image);
 }
 
-BarcodeResult BarcodeReader2D::createDetailedResult(const std::string& rawData) {
+BarcodeResult BarcodeReader2D::createDetailedResult(const std::string& rawData) const{
     BarcodeResult result;
     result.type = "QR/DataMatrix";
     result.digits = rawData;

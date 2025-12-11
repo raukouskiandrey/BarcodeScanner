@@ -75,14 +75,13 @@ struct ProblemDetail {
 struct FailureAnalysis {
     std::vector<ProblemDetail> problems;
     ProblemDetail primaryProblem;
-    double overallScore;
-    bool isFixable;
+    double overallScore = 0.0;
+    bool isFixable = false;
     std::string summary;
-    std::map<std::string, double> metrics;
+    std::map<std::string, double, std::less<>> metrics;
 
     // Конструктор по умолчанию
-    FailureAnalysis() noexcept
-        : overallScore(0.0), isFixable(false) {}
+    FailureAnalysis() noexcept = default;
 
     // Конструктор копирования
     FailureAnalysis(const FailureAnalysis& other) = default;

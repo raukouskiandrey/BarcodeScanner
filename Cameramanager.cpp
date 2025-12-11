@@ -3,11 +3,12 @@
 #include "CameraException.h"
 
 CameraManager::CameraManager(QObject* parent)
-    : QObject(parent), videoCapture(nullptr), cameraActive(false), mirrorMode(true)
+    : QObject(parent)
 {
     frameTimer = new QTimer(this);
     connect(frameTimer, &QTimer::timeout, this, &CameraManager::updateFrame);
 }
+
 
 CameraManager::~CameraManager()
 {
@@ -76,7 +77,7 @@ bool CameraManager::isCameraActive() const
     return cameraActive;
 }
 
-cv::Mat CameraManager::getCurrentFrame()
+cv::Mat CameraManager::getCurrentFrame() const
 {
     return currentFrame.clone();
 }

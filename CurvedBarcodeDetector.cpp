@@ -78,12 +78,9 @@ std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv
         if (contour.empty()) continue;
 
         cv::Rect bbox = cv::boundingRect(contour);
-
-        if (isValidBarcodeRegionExtended(bbox, image_size, contour)) {
-            if (hasBarcodeTextureAdvanced(binary(bbox))) {
-                cv::Rect expanded_bbox = expandBarcodeRegion(bbox, image_size);
-                regions.push_back(expanded_bbox);
-            }
+        if (isValidBarcodeRegionExtended(bbox, image_size, contour) && hasBarcodeTextureAdvanced(binary(bbox))) {
+            cv::Rect expanded_bbox = expandBarcodeRegion(bbox, image_size);
+            regions.push_back(expanded_bbox);
         }
     }
 
@@ -91,7 +88,7 @@ std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv
 }
 
 bool CurvedBarcodeDetector::isValidBarcodeRegionExtended(const cv::Rect& rect, const cv::Size& image_size,
-                                                         const std::vector<cv::Point>& contour) {
+                                                         const std::vector<cv::Point>& contour) const{
     if (rect.width < 30 || rect.height < 10) return false;
     if (rect.width > image_size.width * 0.7 || rect.height > image_size.height * 0.7) return false;
 
@@ -108,7 +105,7 @@ bool CurvedBarcodeDetector::isValidBarcodeRegionExtended(const cv::Rect& rect, c
     return valid_aspect && valid_contour;
 }
 
-cv::Rect CurvedBarcodeDetector::expandBarcodeRegion(const cv::Rect& original, const cv::Size& image_size) {
+cv::Rect CurvedBarcodeDetector::expandBarcodeRegion(const cv::Rect& original, const cv::Size& image_size) const{
     int expand_x = original.width * 0.2;
     int expand_y = original.height * 0.3;
 
@@ -121,7 +118,7 @@ cv::Rect CurvedBarcodeDetector::expandBarcodeRegion(const cv::Rect& original, co
     return expanded;
 }
 
-std::vector<cv::Rect> CurvedBarcodeDetector::removeDuplicateRegions(const std::vector<cv::Rect>& regions) {
+std::vector<cv::Rect> CurvedBarcodeDetector::removeDuplicateRegions(const std::vector<cv::Rect>& regions) const{
     std::vector<cv::Rect> unique_regions;
 
     for (const auto& rect : regions) {
@@ -145,7 +142,7 @@ std::vector<cv::Rect> CurvedBarcodeDetector::removeDuplicateRegions(const std::v
     return unique_regions;
 }
 
-bool CurvedBarcodeDetector::hasBarcodeTextureAdvanced(const cv::Mat& region) {
+bool CurvedBarcodeDetector::hasBarcodeTextureAdvanced(const cv::Mat& region) const{
     if (region.empty() || region.rows < 5 || region.cols < 5) return false;
 
     cv::Mat gray = region;

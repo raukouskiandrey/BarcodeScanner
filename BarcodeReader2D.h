@@ -18,5 +18,5 @@ public:
 
 private:
     BarcodeDetectorOpenCV2D opencv2DDetector;
-    BarcodeResult createDetailedResult(const std::string& rawData);
+    BarcodeResult createDetailedResult(const std::string& rawData) const;
 };
