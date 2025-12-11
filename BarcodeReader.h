@@ -41,12 +41,12 @@ private:
     std::string smartDecodeWithUnwarp(const cv::Mat& frame, const cv::Rect& rect);
 
     std::string findProduct(const QString& barcode);
-    std::string findCountry(const std::string& digits);
-    std::string findManufacturer(const std::string& digits);
-    std::string findAdditionalProduct(const std::string& digits);
+    std::string findCountry(std::string_view digits);
+    std::string findManufacturer(std::string_view digits);
+    std::string findAdditionalProduct(std::string_view digits);
 
-    std::string findCountryForEAN8(const std::string& digits);
-    std::string findProductForEAN8(const std::string& digits);
+    std::string findCountryForEAN8(std::string_view digits);
+    std::string findProductForEAN8(std::string_view digits);
 
     bool isEAN13orUPCA(const BarcodeResult& result);
     bool isEAN8(const BarcodeResult& result);
