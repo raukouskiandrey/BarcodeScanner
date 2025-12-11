@@ -15,16 +15,16 @@ public:
     explicit ImageManager(QObject* parent = nullptr);
 
     bool loadImage(const QString& filePath);
-    bool saveImage(const QString& filePath, const cv::Mat& image);
+    bool saveImage(const QString& filePath, const cv::Mat& image) const;
     cv::Mat getCurrentImage() const;
     bool hasImage() const;
     void clearImage();
 
     // Методы для обработки изображений
-    cv::Mat resizeImage(const cv::Mat& image, const QSize& size, bool keepAspectRatio = true);
-    cv::Mat convertToDisplayFormat(const cv::Mat& image);
-    cv::Mat enhanceImage(const cv::Mat& image, double contrast = 1.0, double brightness = 0.0);
-    cv::Mat cropImage(const cv::Mat& image, const QRect& region);
+    cv::Mat resizeImage(const cv::Mat& image, const QSize& size, bool keepAspectRatio = true) const;
+    cv::Mat convertToDisplayFormat(const cv::Mat& image) const;
+    cv::Mat enhanceImage(const cv::Mat& image, double contrast = 1.0, double brightness = 0.0) const;
+    cv::Mat cropImage(const cv::Mat& image, const QRect& region) const;
 
     QString getLastFilePath() const;
     QSize getImageSize() const;
@@ -37,7 +37,7 @@ signals:
 private:
     cv::Mat currentImage;
     QString lastFilePath;
-    bool imageLoadedFlag;
+    bool imageLoadedFlag = false;
 };
 
 #endif // IMAGEMANAGER_H

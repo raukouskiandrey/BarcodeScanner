@@ -37,11 +37,10 @@ private:
 
     bool extractMultipartBody(const QByteArray& request, QByteArray& outBody) const;
 
-private:
     QTcpServer* tcpServer;
-    QTcpSocket* clientSocket;
+    QTcpSocket* clientSocket = nullptr;
     QString address;
-    bool running;
+    bool running = false;
     QByteArray requestBuffer;
     qint64 expectedLength = -1;
 };

@@ -1,5 +1,5 @@
 #include "SmartDecoder.h"
-#include "ZbarDecoder.h"
+#include "ZBarDecoder.h"
 #include <iostream>
 
 SmartDecoder::SmartDecoder(ImagePreprocessor& p, ZBarDecoder& d)

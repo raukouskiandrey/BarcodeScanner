@@ -4,7 +4,7 @@
 #include "FileException.h"
 #include "ImageLoadException.h"
 ImageManager::ImageManager(QObject* parent)
-    : QObject(parent), imageLoadedFlag(false)
+    : QObject(parent)
 {
 }
 
@@ -26,7 +26,7 @@ bool ImageManager::loadImage(const QString& filePath)
     emit imageLoaded(filePath, QSize(image.cols, image.rows));
     return true;
 }
-bool ImageManager::saveImage(const QString& filePath, const cv::Mat& image) {
+bool ImageManager::saveImage(const QString& filePath, const cv::Mat& image) const{
     if (image.empty()) {
         throw FileException("Пустое изображение для сохранения: " + filePath.toStdString());
     }
@@ -57,7 +57,7 @@ void ImageManager::clearImage()
     emit imageCleared();
 }
 
-cv::Mat ImageManager::resizeImage(const cv::Mat& image, const QSize& size, bool keepAspectRatio)
+cv::Mat ImageManager::resizeImage(const cv::Mat& image, const QSize& size, bool keepAspectRatio) const
 {
     if (image.empty()) return cv::Mat();
 
@@ -75,7 +75,7 @@ cv::Mat ImageManager::resizeImage(const cv::Mat& image, const QSize& size, bool 
     return resized;
 }
 
-cv::Mat ImageManager::convertToDisplayFormat(const cv::Mat& image)
+cv::Mat ImageManager::convertToDisplayFormat(const cv::Mat& image) const
 {
     if (image.empty()) return cv::Mat();
 
@@ -94,7 +94,7 @@ cv::Mat ImageManager::convertToDisplayFormat(const cv::Mat& image)
     return displayImage;
 }
 
-cv::Mat ImageManager::enhanceImage(const cv::Mat& image, double contrast, double brightness)
+cv::Mat ImageManager::enhanceImage(const cv::Mat& image, double contrast, double brightness) const
 {
     if (image.empty()) return cv::Mat();
 
@@ -103,7 +103,7 @@ cv::Mat ImageManager::enhanceImage(const cv::Mat& image, double contrast, double
     return enhanced;
 }
 
-cv::Mat ImageManager::cropImage(const cv::Mat& image, const QRect& region)
+cv::Mat ImageManager::cropImage(const cv::Mat& image, const QRect& region) const
 {
     if (image.empty() || region.isEmpty()) return cv::Mat();
 

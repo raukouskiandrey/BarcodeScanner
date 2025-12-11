@@ -9,9 +9,7 @@
 
 WebServer::WebServer(QObject* parent)
     : QObject(parent),
-    tcpServer(new QTcpServer(this)),
-    clientSocket(nullptr),
-    running(false)
+    tcpServer(new QTcpServer(this))
 {
     connect(tcpServer, &QTcpServer::newConnection,
             this, &WebServer::onNewConnection);
@@ -218,24 +216,25 @@ bool WebServer::extractMultipartBody(const QByteArray& request, QByteArray& outB
     if (int eol = boundary.indexOf("\r\n"); eol != -1)
         boundary = boundary.left(eol);
 
-
     QByteArray boundaryPrefix = "--" + boundary.toUtf8();
     QByteArray partEnd        = "\r\n--" + boundary.toUtf8();
     QByteArray finalEnd       = "\r\n--" + boundary.toUtf8() + "--";
 
     // 2. Найти Content-Disposition с filename=
     int dispoPos = request.indexOf("Content-Disposition:");
-    while (dispoPos != -1) {
+    bool foundFilename = false;
+    while (dispoPos != -1 && !foundFilename) {
         int lineEnd = request.indexOf("\r\n", dispoPos);
         if (lineEnd == -1) break;
 
-        if (QByteArray dispoLine = request.mid(dispoPos, lineEnd - dispoPos);
-            dispoLine.contains("form-data") && dispoLine.contains("filename=")) {
-            break;
+        QByteArray dispoLine = request.mid(dispoPos, lineEnd - dispoPos);
+        if (dispoLine.contains("form-data") && dispoLine.contains("filename=")) {
+            foundFilename = true;
+        } else {
+            dispoPos = request.indexOf("Content-Disposition:", lineEnd);
         }
-        dispoPos = request.indexOf("Content-Disposition:", lineEnd);
     }
-    if (dispoPos == -1) return false;
+    if (!foundFilename) return false;
 
     // 3. Найти конец заголовков этой части
     int headerEnd = request.indexOf("\r\n\r\n", dispoPos);
@@ -248,7 +247,6 @@ bool WebServer::extractMultipartBody(const QByteArray& request, QByteArray& outB
     if (fileEnd == -1) fileEnd = request.indexOf(boundaryPrefix, fileStart);
     if (fileEnd == -1) fileEnd = request.size();
 
-
     // 5. Обрезать лишние \r\n перед boundary
     int trimmedEnd = fileEnd;
     if (trimmedEnd >= 2 && request.mid(trimmedEnd - 2, 2) == "\r\n") trimmedEnd -= 2;
@@ -257,4 +255,3 @@ bool WebServer::extractMultipartBody(const QByteArray& request, QByteArray& outB
     outBody = request.mid(fileStart, trimmedEnd - fileStart);
     return !outBody.isEmpty();
 }
-

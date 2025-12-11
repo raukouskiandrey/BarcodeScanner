@@ -61,7 +61,7 @@ std::vector<cv::Rect> CurvedBarcodeDetector::detectCurvedBarcodesOptimized(const
     return curved_regions;
 }
 
-std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size) {
+std::vector<cv::Rect> CurvedBarcodeDetector::extractRegionsFromContours(const cv::Mat& binary, const cv::Size& image_size) const{
     std::vector<cv::Rect> regions;
 
     cv::Mat morph;
