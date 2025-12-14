@@ -13,9 +13,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =============================================================================
 
 set(CMAKE_PREFIX_PATH "C:/msys64/mingw64")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-
-
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 # =============================================================================
@@ -69,49 +66,18 @@ endif()
 # ИСХОДНЫЕ ФАЙЛЫ ПРОЕКТА
 # =============================================================================
 
+file(GLOB_RECURSE PROJECT_HEADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/header/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/header/*.ui"
+)
+
+file(GLOB_RECURSE PROJECT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp"
+)
+
 qt_add_executable(BarcodeScanner MANUAL_FINALIZATION
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
-        Country.cpp
-        Country.h
-        Manufacturer.cpp
-        Manufacturer.h
-        Product.cpp
-        Product.h
-        Imagemanager.cpp
-        Imagemanager.h
-        Cameramanager.cpp
-        Cameramanager.h
-        BarcodeReader.h
-        BarcodeDetectorOpenCV.h
-        CurvedBarcodeDetector.h
-        ImagePreprocessor.h
-        ZBarDecoder.h
-        SmartDecoder.h
-        BarcodeReader.cpp
-        BarcodeDetectorOpenCV.cpp
-        CurvedBarcodeDetector.cpp
-        ImagePreprocessor.cpp
-        ZBarDecoder.cpp
-        SmartDecoder.cpp
-        BarcodeResult.h
-        BarcodeDetectorOpenCV2D.h
-        BarcodeDetectorOpenCV2D.cpp
-        BarcodeReader2D.h
-        BarcodeReader2D.cpp
-        WebServer.h
-        WebServer.cpp
-        AbstractDecoder.h
-        BarcodeException.h
-        ImageLoadException.h
-        CameraException.h
-        DecodeException.h
-        FileException.h
-        ImageBuffer.h
-        FailureAnalysis.cpp
-        FailureAnalysis.h
+    ${PROJECT_HEADERS}
+    ${PROJECT_SOURCES}
 )
 
 # =============================================================================
@@ -125,7 +91,7 @@ target_compile_definitions(BarcodeScanner PRIVATE
 )
 
 target_include_directories(BarcodeScanner PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/header   # папка с заголовками
     ${OpenCV_INCLUDE_DIRS}
     ${ZBAR_INCLUDE_DIR}
     ${Qt6Core_INCLUDE_DIRS}
@@ -179,12 +145,10 @@ set(QT_BIN_PATH "C:/msys64/mingw64/bin")
 
 message(STATUS "Searching for Qt DLLs in: ${QT_BIN_PATH}")
 
-# Поиск основных Qt DLL
 find_file(QT6_CORE_DLL Qt6Core.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
 find_file(QT6_WIDGETS_DLL Qt6Widgets.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
 find_file(QT6_GUI_DLL Qt6Gui.dll PATHS ${QT_BIN_PATH} NO_DEFAULT_PATH)
 
-# Проверка найденных DLL
 if(QT6_CORE_DLL)
     message(STATUS "✓ Found: ${QT6_CORE_DLL}")
 else()
@@ -203,7 +167,6 @@ else()
     message(FATAL_ERROR "✗ Not found: Qt6Gui.dll")
 endif()
 
-# Копирование основных Qt DLL
 copy_dll_if_exists("${QT6_CORE_DLL}" BarcodeScanner)
 copy_dll_if_exists("${QT6_WIDGETS_DLL}" BarcodeScanner)
 copy_dll_if_exists("${QT6_GUI_DLL}" BarcodeScanner)
@@ -212,13 +175,11 @@ copy_dll_if_exists("${QT6_GUI_DLL}" BarcodeScanner)
 # КОПИРОВАНИЕ Qt6 ПЛАГИНОВ
 # =============================================================================
 
-# Создаем папку для плагинов
 add_custom_command(TARGET BarcodeScanner POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
             "$<TARGET_FILE_DIR:BarcodeScanner>/platforms"
 )
 
-# Поиск плагина Windows
 find_file(QT6_QWINDOWS_DLL
     NAMES qwindows.dll
     PATHS
@@ -243,7 +204,6 @@ endif()
 # КОПИРОВАНИЕ ДОПОЛНИТЕЛЬНЫХ Qt ЗАВИСИМОСТЕЙ
 # =============================================================================
 
-# ICU библиотеки для интернационализации
 file(GLOB ICU_DLLS
     "C:/msys64/mingw64/bin/icudt*.dll"
     "C:/msys64/mingw64/bin/icuin*.dll"
@@ -303,3 +263,4 @@ if(Qt6Core_FOUND AND Qt6Widgets_FOUND AND OpenCV_FOUND AND ZBAR_LIBRARY)
 else()
     message(FATAL_ERROR "✗ Some required components are missing!")
 endif()
+

@@ -49,7 +49,7 @@ BarcodeResult BarcodeReader2D::createDetailedResult(const std::string& rawData) 
 }
 
 void BarcodeReader2D::saveToFile(const BarcodeResult& result) {
-    const std::string filename = "C:/Users/rauko/Desktop/Barcode_All.txt";
+    const std::string filename = "C:/Users/rauko/Desktop/data_files/Barcode_All.txt";
 
     std::ofstream file(filename, std::ios::app);
     if (!file.is_open()) {

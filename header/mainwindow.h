@@ -86,6 +86,9 @@ private:
     void processBarcodeResult(const BarcodeResult& result);
     void openPhoneDialog();
     BarcodeResult decodeImageWithDecoders(const cv::Mat& imageToScan);
+
+    AbstractDecoder* lastDecoder = nullptr;
+
 };
 
 #endif // MAINWINDOW_H

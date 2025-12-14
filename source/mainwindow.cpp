@@ -126,6 +126,7 @@ BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
         try {
             result = decoder->decode(imageToScan);
             if (result.type != "Неизвестно" && !result.digits.empty()) {
+                lastDecoder = decoder.get();   // ← сохраняем указатель на декодер
                 return result;
             }
         } catch (const DecodeException& e) {
@@ -134,6 +135,7 @@ BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
     }
     throw DecodeException("Ни один декодер не распознал штрих-код");
 }
+
 
 void MainWindow::scanBarcode() {
     progressBar->setVisible(true);
@@ -205,15 +207,9 @@ void MainWindow::clearResults()
 
 void MainWindow::saveBarcode()
 {
-    if (!lastBarcodeResult.isEmpty()) {
+    if (!lastBarcodeResult.isEmpty() && lastDecoder) {
         try {
-            for (const auto& decoder : decoders) {
-                if (decoder->getDecoderName() == lastResult.type ||
-                    (lastResult.type.find("QR") != std::string::npos && decoder->getDecoderName() == "BarcodeReader2D")) {
-                    decoder->saveToFile(lastResult);
-                    break;
-                }
-            }
+            lastDecoder->saveToFile(lastResult);   // сохраняем через тот же декодер
             resultText->append("✅ Результат сохранен в файл!");
         }
         catch (const FileException& e) {
@@ -221,8 +217,6 @@ void MainWindow::saveBarcode()
         }
     }
 }
-
-
 
 
 void MainWindow::toggleCamera()

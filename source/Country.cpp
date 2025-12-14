@@ -28,7 +28,7 @@ QString Country::findCountryByBarcode(const QString& barcode)
     int pref3 = prefix3.toInt();
     int pref2 = prefix2.toInt();
 
-    QString filePath = "C:/Users/rauko/Desktop/Barcode_Countries.txt";
+    QString filePath = "C:/Users/rauko/Desktop/data_files/Barcode_Countries.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         throw FileException("Не удалось открыть файл стран: " + filePath.toStdString());

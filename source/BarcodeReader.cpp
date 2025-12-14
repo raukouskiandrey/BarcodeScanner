@@ -244,7 +244,7 @@ BarcodeResult BarcodeReader::createDetailedResult(const BarcodeResult& basicResu
 }
 
 void BarcodeReader::saveToFile(const BarcodeResult& result) {
-    std::string filePath = "C:\\Users\\rauko\\Desktop\\Barcode_All.txt";
+    std::string filePath = "C:/Users/rauko/Desktop/data_files/Barcode_All.txt";
     std::ofstream file(filePath, std::ios::app);
     if (!file.is_open()) {
         throw FileException("Не удалось открыть файл для записи: " + filePath);

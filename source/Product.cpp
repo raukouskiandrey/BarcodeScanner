@@ -15,7 +15,7 @@ bool Product::isValid() const { return !productName.isEmpty(); }
 // 📂 Поиск товара по штрих-коду напрямую в файле
 QString Product::findProductByBarcode(const QString& barcode)
 {
-    QString filePath = "C:/Users/rauko/Desktop/Barcode_Products.txt";
+    QString filePath = "C:/Users/rauko/Desktop/data_files/Barcode_Products.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         throw FileException("Не удалось открыть файл товаров: " + filePath.toStdString());
