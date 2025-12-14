@@ -16,7 +16,7 @@ bool Manufacturer::isValid() const { return !manufacturerCode.isEmpty() && !manu
 // 📂 Поиск производителя по коду штрих-кода напрямую в файле
 QString Manufacturer::findManufacturerByCode(const QString& code)
 {
-    QString filePath = "C:/Users/rauko/Desktop/data_files/Barcode_Manufacturers.txt";
+    QString filePath = "C:/Users/rauko/Desktop/BarcodeScanner/data/Barcode_Manufacturers.txt";
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         throw FileException("Не удалось открыть файл производителей: " + filePath.toStdString());
