@@ -87,7 +87,7 @@ void WebServer::onReadyRead(QTcpSocket* socket)
     static QMap<QTcpSocket*, QByteArray> buffers;
     buffers[socket].append(data);
 
-    const QByteArray& requestBuffer = buffers[socket];
+    requestBuffer = buffers[socket];
     // Пытаемся найти конец заголовков
     int headerEnd = requestBuffer.indexOf("\r\n\r\n");
     if (headerEnd == -1) {
@@ -95,8 +95,6 @@ void WebServer::onReadyRead(QTcpSocket* socket)
         return;
     }
 
-    // Извлекаем Content-Length если есть
-    qint64 expectedLength = -1;
     if (int contentLengthPos = requestBuffer.indexOf("Content-Length:");contentLengthPos != -1 && contentLengthPos < headerEnd) {
         int end = requestBuffer.indexOf("\n", contentLengthPos);
         if (end != -1) {
