@@ -129,10 +129,10 @@ BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
                 return result;
             }
         } catch (const DecodeException&) {
-
+            // Пропускаем эту ошибку, пробуем следующий декодер
+        }
     }
     throw DecodeException("Штрих‑код не найден");
-    }
 }
 
 void MainWindow::scanBarcode() {
@@ -159,7 +159,7 @@ void MainWindow::scanBarcode() {
     catch (const CameraException& e) {
         QMessageBox::critical(this, "Ошибка камеры", e.what());
     }
-    catch (const DecodeException& e) {
+    catch (const DecodeException&) {
         resultText->append("❌ Штрих‑код не распознан");
         saveButton->setEnabled(false);
     }

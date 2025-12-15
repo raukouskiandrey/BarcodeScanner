@@ -87,8 +87,7 @@ void WebServer::onReadyRead(QTcpSocket* socket)
     static QMap<QTcpSocket*, QByteArray> buffers;
     buffers[socket].append(data);
 
-    QByteArray& requestBuffer = buffers[socket];
-
+    const QByteArray& requestBuffer = buffers[socket];
     // Пытаемся найти конец заголовков
     int headerEnd = requestBuffer.indexOf("\r\n\r\n");
     if (headerEnd == -1) {
@@ -112,13 +111,12 @@ void WebServer::onReadyRead(QTcpSocket* socket)
 
     // Проверяем, получено ли все тело
     qint64 bodyStart = headerEnd + 4;
-    qint64 totalBodySize = requestBuffer.size() - bodyStart;
 
-    if (expectedLength != -1 && totalBodySize < expectedLength) {
+    if (qint64 totalBodySize = requestBuffer.size() - bodyStart;
+        expectedLength != -1 && totalBodySize < expectedLength) {
         // Тело еще не полностью получено
         return;
     }
-
     // Теперь у нас полный запрос
     const bool isGet = requestBuffer.startsWith("GET ");
     const bool isPost = requestBuffer.startsWith("POST ");
@@ -143,8 +141,7 @@ void WebServer::onReadyRead(QTcpSocket* socket)
                                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
                                 ".jpg";
 
-            QFile out(savedPath);
-            if (out.open(QIODevice::WriteOnly)) {
+            if (QFile out(savedPath); out.open(QIODevice::WriteOnly)) {
                 out.write(fileContent);
                 out.close();
                 emit fileSaved(savedPath);
