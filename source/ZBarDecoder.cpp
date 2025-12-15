@@ -60,10 +60,10 @@ std::string ZBarDecoder::decodeWithZBar(const cv::Mat& roi) {
             }
         }
     }
-    catch (const zbar::Exception& e) {
-        std::cerr << "ZBar error: " << e.what() << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Runtime error: " << e.what() << std::endl;
+    catch (const DecodeException& e) {
+        std::cerr << "Decode error: " << e.what() << std::endl;
+    } catch (const BarcodeException& e) {
+        std::cerr << "Barcode error: " << e.what() << std::endl;
     }
     return "";
 }

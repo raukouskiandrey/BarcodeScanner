@@ -3,6 +3,8 @@
 #include <zbar.h>
 #include <string>
 #include "BarcodeResult.h"
+#include "DecodeException.h"
+#include "BarcodeException.h"
 
 class ZBarDecoder {
 private:

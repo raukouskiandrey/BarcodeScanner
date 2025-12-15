@@ -223,7 +223,7 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
     if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
             cameraBuffer << frame;
-        } catch (const std::runtime_error& e) {
+        } catch (const BarcodeException& e) {
             resultText->append(QString("⚠️ Ошибка буфера: ") + e.what());
             return;
         }

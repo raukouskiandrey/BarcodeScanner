@@ -24,6 +24,7 @@
 #include "BarcodeResult.h"
 #include "WebServer.h"
 #include "ImageBuffer.h"
+#include "BarcodeException.h"
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
