@@ -395,7 +395,8 @@ void MainWindow::openPhoneDialog()
     copyBtn->setEnabled(false);
     stopBtn->setEnabled(false); // выключать можно только если сервер запущен
 
-    connect(startBtn, &QPushButton::clicked, [&]() {
+    connect(startBtn, &QPushButton::clicked, [server, statusLabel, copyBtn, stopBtn]() {
+        // теперь явно захвачены только нужные переменные
         if (server->startServer(8080)) {
             statusLabel->setText("✅ Сервер запущен: " + server->serverAddress());
             copyBtn->setEnabled(true);
@@ -403,14 +404,15 @@ void MainWindow::openPhoneDialog()
         }
     });
 
-    connect(stopBtn, &QPushButton::clicked, [&]() {
+    connect(stopBtn, &QPushButton::clicked, [server, statusLabel, copyBtn, stopBtn]() {
         server->stopServer();
         statusLabel->setText("⛔ Сервер остановлен");
         copyBtn->setEnabled(false);
         stopBtn->setEnabled(false);
     });
 
-    connect(copyBtn, &QPushButton::clicked, [&]() {
+    connect(copyBtn, &QPushButton::clicked, [server, &dialog]() {
+        // захватываем server и dialog (dialog по ссылке, так как он локальная переменная)
         QApplication::clipboard()->setText(server->serverAddress());
         QMessageBox::information(&dialog, "Скопировано", "Адрес скопирован!");
     });
