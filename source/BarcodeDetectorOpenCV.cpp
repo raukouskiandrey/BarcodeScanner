@@ -24,11 +24,6 @@ std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(cons
     } catch (const BarcodeException& e) {
         std::cerr << "Barcode error: " << e.what() << std::endl;
     }
-    catch (const cv::Exception& e) {
-        std::cerr << "OpenCV error: " << e.what() << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Runtime error: " << e.what() << std::endl;
-    }
 
 
     return polygons;
