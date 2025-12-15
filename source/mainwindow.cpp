@@ -8,7 +8,6 @@
 #include "CameraException.h"
 #include "ImageBuffer.h"
 \
-    ImageBuffer<cv::Mat> MainWindow::cameraBuffer(10);
 
 MainWindow::~MainWindow()
 {
@@ -18,6 +17,7 @@ MainWindow::~MainWindow()
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
+    cameraBuffer(10), // Инициализация в списке инициализации
     cameraManager(new CameraManager(this)),
     imageManager(new ImageManager(this))
 {
@@ -217,29 +217,29 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 {
     displayImage(frame);
 
-    static int frameCounter = 0;
+    static int frameCounter = 0; // Это локальная статическая переменная - нормально
     frameCounter++;
 
     if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
-            cameraBuffer << frame;
+            cameraBuffer.add(frame); // Используйте правильный метод добавления
         } catch (const std::runtime_error& e) {
             resultText->append(QString("⚠️ Ошибка буфера: ") + e.what());
             return;
         }
     }
 
-        for (const auto& img : cameraBuffer) {
-            for (const auto& decoder : decoders) {
-                BarcodeResult result = decoder->decode(img);
-                if (result.type != "Неизвестно" && !result.digits.empty()) {
-                    processBarcodeResult(result);
-                    cameraBuffer.clear();
-                    frameCounter = 0;
-                    return;
-                }
+    for (const auto& img : cameraBuffer) {
+        for (const auto& decoder : decoders) {
+            BarcodeResult result = decoder->decode(img);
+            if (result.type != "Неизвестно" && !result.digits.empty()) {
+                processBarcodeResult(result);
+                cameraBuffer.clear();
+                frameCounter = 0;
+                return;
             }
         }
+    }
 }
 
 void MainWindow::onCameraStarted()
