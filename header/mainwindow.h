@@ -23,7 +23,7 @@
 #include "BarcodeReader2D.h"
 #include "BarcodeResult.h"
 #include "WebServer.h"
-
+#include "ImageBuffer.h"
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -51,6 +51,7 @@ private slots:
     void onImageError(const QString& error);
 
 private:
+    static ImageBuffer<cv::Mat> cameraBuffer;
     // --- UI ---
     QWidget* centralWidget;
     QVBoxLayout* mainLayout;
