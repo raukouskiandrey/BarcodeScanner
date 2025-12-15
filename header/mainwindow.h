@@ -51,33 +51,30 @@ private slots:
     void onImageError(const QString& error);
 
 private:
-    ImageBuffer<cv::Mat> cameraBuffer;
+    // --- Менеджеры --- (объявляем ПЕРВЫМИ)
+    CameraManager* cameraManager;                       // 1
+    ImageManager* imageManager;                         // 2
+    ImageBuffer<cv::Mat> cameraBuffer{10};              // 3 - in-class инициализация
+
     // --- UI ---
-    QWidget* centralWidget;
-    QVBoxLayout* mainLayout;
-    QHBoxLayout* buttonLayout;
+    QWidget* centralWidget;                             // 4
+    QVBoxLayout* mainLayout;                            // 5
+    QHBoxLayout* buttonLayout;                          // 6
+    QPushButton* loadButton;                            // 7
+    QPushButton* scanButton;                            // 8
+    QPushButton* clearButton;                           // 9
+    QPushButton* saveButton;                            // 10
+    QPushButton* cameraButton;                          // 11
+    QPushButton* phoneButton;                           // 12
+    QLabel* imageLabel;                                 // 13
+    QTextEdit* resultText;                              // 14
+    QProgressBar* progressBar;                          // 15
 
-    QPushButton* loadButton;
-    QPushButton* scanButton;
-    QPushButton* clearButton;
-    QPushButton* saveButton;
-    QPushButton* cameraButton;
-    QPushButton* phoneButton;
-
-    QLabel* imageLabel;
-    QTextEdit* resultText;
-    QProgressBar* progressBar;
-
-    // --- Менеджеры ---
-    CameraManager* cameraManager;
-    ImageManager* imageManager;
-
-    // --- Универсальные декодеры ---
-    std::vector<std::unique_ptr<AbstractDecoder>> decoders;
-
-    // --- Последний результат ---
-    BarcodeResult lastResult;
-    QString lastBarcodeResult;
+    // --- Декодеры и результаты ---
+    std::vector<std::unique_ptr<AbstractDecoder>> decoders;  // 16
+    BarcodeResult lastResult;                            // 17
+    QString lastBarcodeResult;                           // 18
+    AbstractDecoder* lastDecoder = nullptr;              // 19
 
     // --- Методы ---
     void setupUI();
@@ -87,8 +84,6 @@ private:
     void processBarcodeResult(const BarcodeResult& result);
     void openPhoneDialog();
     BarcodeResult decodeImageWithDecoders(const cv::Mat& imageToScan);
-
-    AbstractDecoder* lastDecoder = nullptr;
 
 };
 

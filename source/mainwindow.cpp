@@ -17,8 +17,7 @@ MainWindow::~MainWindow()
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
     cameraManager(new CameraManager(this)),
-    imageManager(new ImageManager(this)),
-    cameraBuffer(10)  // Инициализация в списке инициализации
+    imageManager(new ImageManager(this))  // Инициализация в списке инициализации
 {
     // Добавляем все декодеры в список
     decoders.push_back(std::make_unique<BarcodeReader>());
