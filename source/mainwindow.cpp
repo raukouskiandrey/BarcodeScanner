@@ -122,14 +122,10 @@ void MainWindow::loadImage()
 BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
     BarcodeResult result;
     for (const auto& decoder : decoders) {
-        try {
-            result = decoder->decode(imageToScan);
-            if (result.type != "Неизвестно" && !result.digits.empty()) {
-                lastDecoder = decoder.get();
-                return result;
-            }
-        } catch (const DecodeException&) {
-            // Пропускаем эту ошибку, пробуем следующий декодер
+        result = decoder->decode(imageToScan);
+        if (result.type != "Неизвестно" && !result.digits.empty()) {
+            lastDecoder = decoder.get();
+            return result;
         }
     }
     throw DecodeException("Штрих‑код не найден");
@@ -234,7 +230,6 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
         }
     }
 
-    try {
         for (const auto& img : cameraBuffer) {
             for (const auto& decoder : decoders) {
                 BarcodeResult result = decoder->decode(img);
@@ -246,12 +241,6 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
                 }
             }
         }
-        // ⚠️ Здесь убираем вывод "штрих код не найден"
-        // Просто ничего не пишем, пока не будет успеха
-    }
-    catch (const DecodeException&) {
-        // Можно вообще не выводить, чтобы не спамить
-    }
 }
 
 void MainWindow::onCameraStarted()
