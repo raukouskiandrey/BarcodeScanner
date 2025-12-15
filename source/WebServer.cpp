@@ -97,8 +97,7 @@ void WebServer::onReadyRead(QTcpSocket* socket)
 
     // Извлекаем Content-Length если есть
     qint64 expectedLength = -1;
-    int contentLengthPos = requestBuffer.indexOf("Content-Length:");
-    if (contentLengthPos != -1 && contentLengthPos < headerEnd) {
+    if (int contentLengthPos = requestBuffer.indexOf("Content-Length:");contentLengthPos != -1 && contentLengthPos < headerEnd) {
         int end = requestBuffer.indexOf("\n", contentLengthPos);
         if (end != -1) {
             QByteArray lenLine = requestBuffer.mid(contentLengthPos, end - contentLengthPos);
