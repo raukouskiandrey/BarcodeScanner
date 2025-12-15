@@ -53,9 +53,9 @@ private slots:
 
 private:
     // --- Менеджеры --- (объявляем ПЕРВЫМИ)
-    CameraManager* cameraManager;                       // 1
-    ImageManager* imageManager;                         // 2
-    ImageBuffer<cv::Mat> cameraBuffer{10};              // 3 - in-class инициализация
+    CameraManager* cameraManager;
+    ImageManager* imageManager;
+    ImageBuffer<cv::Mat> cameraBuffer{10};
 
     // --- UI ---
     QWidget* centralWidget;                             // 4
