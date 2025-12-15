@@ -62,16 +62,15 @@ private:
     QVBoxLayout* mainLayout;                            // 5
     QHBoxLayout* buttonLayout;                          // 6
     QPushButton* loadButton;                            // 7
-    QPushButton* scanButton;                            // 8
+    QPushButton* scanButton;
     QPushButton* clearButton;                           // 9
     QPushButton* saveButton;                            // 10
-    QPushButton* cameraButton;                          // 11
+    QPushButton* cameraButton;
     QPushButton* phoneButton;                           // 12
-    QLabel* imageLabel;                                 // 13
-    QTextEdit* resultText;                              // 14
-    QProgressBar* progressBar;                          // 15
+    QLabel* imageLabel;
+    QTextEdit* resultText;
+    QProgressBar* progressBar;
 
-    // --- Декодеры и результаты ---
     std::vector<std::unique_ptr<AbstractDecoder>> decoders;  // 16
     BarcodeResult lastResult;                            // 17
     QString lastBarcodeResult;                           // 18
