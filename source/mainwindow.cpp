@@ -121,15 +121,11 @@ void MainWindow::loadImage()
 BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
     BarcodeResult result;
     for (const auto& decoder : decoders) {
-        try {
             result = decoder->decode(imageToScan);
             if (result.type != "Неизвестно" && !result.digits.empty()) {
                 lastDecoder = decoder.get();
                 return result;
             }
-        } catch (const DecodeException&) {
-            // Пропускаем и пробуем следующий декодер
-        }
     }
     throw DecodeException("Штрих-код не найден");
 }
