@@ -86,13 +86,10 @@ void MainWindow::setupUI()
     resultText->setReadOnly(true);
     resultText->setPlaceholderText("Результаты сканирования появятся здесь...");
 
-    //progressBar = new QProgressBar(this);
-    //progressBar->setVisible(false);
 
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(imageLabel);
     mainLayout->addWidget(resultText);
-    //mainLayout->addWidget(progressBar);
 
     setWindowTitle("Barcode Scanner v2.0 - Считывание с камеры");
     resize(800, 600);
