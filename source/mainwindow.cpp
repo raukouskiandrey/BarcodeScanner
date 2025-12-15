@@ -7,7 +7,6 @@
 #include "FileException.h"
 #include "CameraException.h"
 #include "ImageBuffer.h"
-\
 
 MainWindow::~MainWindow()
 {
@@ -17,7 +16,6 @@ MainWindow::~MainWindow()
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
-    cameraBuffer(10), // Инициализация в списке инициализации
     cameraManager(new CameraManager(this)),
     imageManager(new ImageManager(this))
 {
@@ -89,9 +87,11 @@ void MainWindow::setupUI()
     resultText->setPlaceholderText("Результаты сканирования появятся здесь...");
 
 
+
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(imageLabel);
     mainLayout->addWidget(resultText);
+
 
     setWindowTitle("Barcode Scanner v2.0 - Считывание с камеры");
     resize(800, 600);
@@ -121,13 +121,17 @@ void MainWindow::loadImage()
 BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
     BarcodeResult result;
     for (const auto& decoder : decoders) {
-        result = decoder->decode(imageToScan);
-        if (result.type != "Неизвестно" && !result.digits.empty()) {
-            lastDecoder = decoder.get();
-            return result;
-        }
+        try {
+            result = decoder->decode(imageToScan);
+            if (result.type != "Неизвестно" && !result.digits.empty()) {
+                lastDecoder = decoder.get();
+                return result;
+            }
+        } catch (const DecodeException&) {
+
     }
     throw DecodeException("Штрих‑код не найден");
+    }
 }
 
 void MainWindow::scanBarcode() {
@@ -154,7 +158,7 @@ void MainWindow::scanBarcode() {
     catch (const CameraException& e) {
         QMessageBox::critical(this, "Ошибка камеры", e.what());
     }
-    catch (const DecodeException&) {
+    catch (const DecodeException& e) {
         resultText->append("❌ Штрих‑код не распознан");
         saveButton->setEnabled(false);
     }
@@ -217,28 +221,35 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 {
     displayImage(frame);
 
-    static int frameCounter = 0; // Это локальная статическая переменная - нормально
+    static int frameCounter = 0;
     frameCounter++;
 
     if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
-            cameraBuffer.add(frame); // Используйте правильный метод добавления
+            cameraBuffer << frame;
         } catch (const std::runtime_error& e) {
             resultText->append(QString("⚠️ Ошибка буфера: ") + e.what());
             return;
         }
     }
 
-    for (const auto& img : cameraBuffer) {
-        for (const auto& decoder : decoders) {
-            BarcodeResult result = decoder->decode(img);
-            if (result.type != "Неизвестно" && !result.digits.empty()) {
-                processBarcodeResult(result);
-                cameraBuffer.clear();
-                frameCounter = 0;
-                return;
+    try {
+        for (const auto& img : cameraBuffer) {
+            for (const auto& decoder : decoders) {
+                BarcodeResult result = decoder->decode(img);
+                if (result.type != "Неизвестно" && !result.digits.empty()) {
+                    processBarcodeResult(result);
+                    cameraBuffer.clear();
+                    frameCounter = 0;
+                    return;
+                }
             }
         }
+        // ⚠️ Здесь убираем вывод "штрих код не найден"
+        // Просто ничего не пишем, пока не будет успеха
+    }
+    catch (const DecodeException&) {
+        // Можно вообще не выводить, чтобы не спамить
     }
 }
 
@@ -384,8 +395,7 @@ void MainWindow::openPhoneDialog()
     copyBtn->setEnabled(false);
     stopBtn->setEnabled(false); // выключать можно только если сервер запущен
 
-    connect(startBtn, &QPushButton::clicked, [server, statusLabel, copyBtn, stopBtn]() {
-        // теперь явно захвачены только нужные переменные
+    connect(startBtn, &QPushButton::clicked, [&]() {
         if (server->startServer(8080)) {
             statusLabel->setText("✅ Сервер запущен: " + server->serverAddress());
             copyBtn->setEnabled(true);
@@ -393,15 +403,14 @@ void MainWindow::openPhoneDialog()
         }
     });
 
-    connect(stopBtn, &QPushButton::clicked, [server, statusLabel, copyBtn, stopBtn]() {
+    connect(stopBtn, &QPushButton::clicked, [&]() {
         server->stopServer();
         statusLabel->setText("⛔ Сервер остановлен");
         copyBtn->setEnabled(false);
         stopBtn->setEnabled(false);
     });
 
-    connect(copyBtn, &QPushButton::clicked, [server, &dialog]() {
-        // захватываем server и dialog (dialog по ссылке, так как он локальная переменная)
+    connect(copyBtn, &QPushButton::clicked, [&]() {
         QApplication::clipboard()->setText(server->serverAddress());
         QMessageBox::information(&dialog, "Скопировано", "Адрес скопирован!");
     });
