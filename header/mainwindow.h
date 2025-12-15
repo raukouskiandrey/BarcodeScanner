@@ -71,10 +71,10 @@ private:
     QTextEdit* resultText;
     QProgressBar* progressBar;
 
-    std::vector<std::unique_ptr<AbstractDecoder>> decoders;  // 16
-    BarcodeResult lastResult;                            // 17
-    QString lastBarcodeResult;                           // 18
-    AbstractDecoder* lastDecoder = nullptr;              // 19
+    std::vector<std::unique_ptr<AbstractDecoder>> decoders;
+    BarcodeResult lastResult;
+    QString lastBarcodeResult;
+    AbstractDecoder* lastDecoder = nullptr;
 
     // --- Методы ---
     void setupUI();
