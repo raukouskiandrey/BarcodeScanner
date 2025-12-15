@@ -51,6 +51,7 @@ private slots:
     void onImageError(const QString& error);
 
 private:
+    ImageBuffer<cv::Mat> cameraBuffer;
     // --- UI ---
     QWidget* centralWidget;
     QVBoxLayout* mainLayout;
