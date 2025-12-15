@@ -7,7 +7,6 @@
 #include "FileException.h"
 #include "CameraException.h"
 #include "ImageBuffer.h"
-#include "FailureAnalysis.h"
 
 MainWindow::~MainWindow()
 {
@@ -87,13 +86,13 @@ void MainWindow::setupUI()
     resultText->setReadOnly(true);
     resultText->setPlaceholderText("Результаты сканирования появятся здесь...");
 
-    progressBar = new QProgressBar(this);
-    progressBar->setVisible(false);
+    //progressBar = new QProgressBar(this);
+    //progressBar->setVisible(false);
 
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(imageLabel);
     mainLayout->addWidget(resultText);
-    mainLayout->addWidget(progressBar);
+    //mainLayout->addWidget(progressBar);
 
     setWindowTitle("Barcode Scanner v2.0 - Считывание с камеры");
     resize(800, 600);
@@ -126,21 +125,17 @@ BarcodeResult MainWindow::decodeImageWithDecoders(const cv::Mat& imageToScan) {
         try {
             result = decoder->decode(imageToScan);
             if (result.type != "Неизвестно" && !result.digits.empty()) {
-                lastDecoder = decoder.get();   // ← сохраняем указатель на декодер
+                lastDecoder = decoder.get();
                 return result;
             }
-        } catch (const DecodeException& e) {
-            resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
-        }
+        } catch (const DecodeException&) {
+
     }
-    throw DecodeException("Ни один декодер не распознал штрих-код");
+    throw DecodeException("Штрих‑код не найден");
+    }
 }
 
-
 void MainWindow::scanBarcode() {
-    progressBar->setVisible(true);
-    progressBar->setRange(0, 0);
-
     try {
         if (!imageManager->hasImage() && !cameraManager->isCameraActive()) {
             throw ImageLoadException("Нет изображения или камеры для сканирования");
@@ -155,24 +150,6 @@ void MainWindow::scanBarcode() {
         BarcodeResult result = decodeImageWithDecoders(imageToScan);
         processBarcodeResult(result);
     }
-    catch (const DecodeException& e) {
-        resultText->append("❌ Не удалось распознать штрих-код");
-
-        cv::Mat imageToAnalyze = cameraManager->isCameraActive()
-                                     ? cameraManager->getCurrentFrame()
-                                     : imageManager->getCurrentImage();
-
-        auto* reader = dynamic_cast<BarcodeReader*>(decoders[0].get());
-        if (reader) {
-            FailureAnalysis analysis = analyzeDecodingFailure(*reader, imageToAnalyze, "");
-            resultText->append("📋 Диагностика ошибки:");
-            resultText->append("🔍 " + QString::fromStdString(analysis.primaryProblem.description));
-            resultText->append("📌 Причина: " + QString::fromStdString(analysis.primaryProblem.cause));
-            resultText->append("💡 Рекомендация: " + QString::fromStdString(analysis.primaryProblem.recommendation));
-        }
-
-        QMessageBox::information(this, "Не удалось распознать", e.what());
-    }
     catch (const ImageLoadException& e) {
         QMessageBox::critical(this, "Ошибка загрузки", e.what());
     }
@@ -182,12 +159,15 @@ void MainWindow::scanBarcode() {
     catch (const CameraException& e) {
         QMessageBox::critical(this, "Ошибка камеры", e.what());
     }
+    catch (const DecodeException& e) {
+        resultText->append("❌ Штрих‑код не распознан");
+        saveButton->setEnabled(false);
+    }
     catch (const BarcodeException& e) {
         QMessageBox::critical(this, "Общая ошибка", e.what());
     }
-
-    progressBar->setVisible(false);
 }
+
 
 void MainWindow::clearResults()
 {
@@ -240,14 +220,11 @@ static ImageBuffer<cv::Mat> cameraBuffer(10);
 
 void MainWindow::onCameraFrameReady(const cv::Mat& frame)
 {
-    // Отображаем кадр в интерфейсе
     displayImage(frame);
 
-    // Счётчик кадров
     static int frameCounter = 0;
     frameCounter++;
 
-    // Добавляем только каждый 5-й кадр
     if (frameCounter % 5 == 0 && !frame.empty()) {
         try {
             cameraBuffer << frame;
@@ -257,7 +234,6 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
         }
     }
 
-    // Проверяем все кадры в контейнере
     try {
         for (const auto& img : cameraBuffer) {
             for (const auto& decoder : decoders) {
@@ -270,14 +246,14 @@ void MainWindow::onCameraFrameReady(const cv::Mat& frame)
                 }
             }
         }
+        // ⚠️ Здесь убираем вывод "штрих код не найден"
+        // Просто ничего не пишем, пока не будет успеха
     }
-    catch (const DecodeException& e) {
-        resultText->append(QString("⚠️ Ошибка декодера: ") + e.what());
-    }
-    catch (const std::exception& e) {
-        resultText->append(QString("⚠️ Общая ошибка: ") + e.what());
+    catch (const DecodeException&) {
+        // Можно вообще не выводить, чтобы не спамить
     }
 }
+
 void MainWindow::onCameraStarted()
 {
     cameraButton->setText("📷 Выключить камеру");

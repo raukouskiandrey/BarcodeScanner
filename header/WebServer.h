@@ -28,7 +28,7 @@ signals:
     void fileSaved(const QString& path);
 private slots:
     void onNewConnection();
-    void onReadyRead();
+    void onReadyRead(QTcpSocket* socket); // Измененная сигнатура
 
 private:
     QByteArray buildUploadPage() const;

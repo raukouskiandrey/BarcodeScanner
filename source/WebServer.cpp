@@ -64,51 +64,63 @@ bool WebServer::isRunning() const
     return running;
 }
 
-// В WebServer.cpp
 void WebServer::onNewConnection()
 {
-    clientSocket = tcpServer->nextPendingConnection();
-    requestBuffer.clear();
-    expectedLength = -1;
+    QTcpSocket* newSocket = tcpServer->nextPendingConnection();
 
-    connect(clientSocket, &QTcpSocket::readyRead,
-            this, &WebServer::onReadyRead);
-    connect(clientSocket, &QTcpSocket::disconnected,
-            clientSocket, &QTcpSocket::deleteLater);
+    // Для каждого соединения создаем отдельную структуру состояния
+    connect(newSocket, &QTcpSocket::readyRead,
+            this, [this, newSocket]() { this->onReadyRead(newSocket); });
+    connect(newSocket, &QTcpSocket::disconnected,
+            newSocket, &QTcpSocket::deleteLater);
 }
 
-void WebServer::onReadyRead()
+void WebServer::onReadyRead(QTcpSocket* socket)
 {
-    if (!clientSocket) return;
+    if (!socket) return;
 
-    // Накапливаем данные
-    requestBuffer.append(clientSocket->readAll());
+    // Читаем все доступные данные
+    QByteArray data = socket->readAll();
 
-    // Если Content-Length ещё не извлечён – пробуем найти его
-    if (expectedLength == -1) {
-        int pos = requestBuffer.indexOf("Content-Length:");
-        if (pos == -1) return;
+    // Добавляем в буфер для этого сокета (можно хранить в map)
+    // Для простоты будем обрабатывать сразу полный запрос
+    static QMap<QTcpSocket*, QByteArray> buffers;
+    buffers[socket].append(data);
 
-        int end = requestBuffer.indexOf("\n", pos);
-        if (end == -1) return;
+    QByteArray& requestBuffer = buffers[socket];
 
-        QByteArray lenLine = requestBuffer.mid(pos, end - pos);
-        QList<QByteArray> parts = lenLine.split(' ');
-        if (parts.size() < 2) return;
-
-        expectedLength = parts.last().toLongLong();
-    }
-
-    // Проверяем: получили ли мы всё тело запроса
+    // Пытаемся найти конец заголовков
     int headerEnd = requestBuffer.indexOf("\r\n\r\n");
-    if (headerEnd == -1) return; // заголовки ещё не полностью пришли
-
-    if (expectedLength != -1 && requestBuffer.size() - (headerEnd + 4) < expectedLength) {
-        return; // ждём оставшиеся байты
+    if (headerEnd == -1) {
+        // Заголовки еще не полностью получены
+        return;
     }
 
-    // --- Теперь у нас полный запрос ---
-    const bool isGet  = requestBuffer.startsWith("GET ");
+    // Извлекаем Content-Length если есть
+    qint64 expectedLength = -1;
+    int contentLengthPos = requestBuffer.indexOf("Content-Length:");
+    if (contentLengthPos != -1 && contentLengthPos < headerEnd) {
+        int end = requestBuffer.indexOf("\n", contentLengthPos);
+        if (end != -1) {
+            QByteArray lenLine = requestBuffer.mid(contentLengthPos, end - contentLengthPos);
+            QList<QByteArray> parts = lenLine.split(' ');
+            if (parts.size() >= 2) {
+                expectedLength = parts.last().toLongLong();
+            }
+        }
+    }
+
+    // Проверяем, получено ли все тело
+    qint64 bodyStart = headerEnd + 4;
+    qint64 totalBodySize = requestBuffer.size() - bodyStart;
+
+    if (expectedLength != -1 && totalBodySize < expectedLength) {
+        // Тело еще не полностью получено
+        return;
+    }
+
+    // Теперь у нас полный запрос
+    const bool isGet = requestBuffer.startsWith("GET ");
     const bool isPost = requestBuffer.startsWith("POST ");
 
     QByteArray response;
@@ -131,8 +143,8 @@ void WebServer::onReadyRead()
                                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") +
                                 ".jpg";
 
-
-            if (QFile out(savedPath); out.open(QIODevice::WriteOnly)) {
+            QFile out(savedPath);
+            if (out.open(QIODevice::WriteOnly)) {
                 out.write(fileContent);
                 out.close();
                 emit fileSaved(savedPath);
@@ -155,19 +167,20 @@ void WebServer::onReadyRead()
     }
 
     if (!response.isEmpty()) {
-        clientSocket->write(response);
-        clientSocket->disconnectFromHost();
+        socket->write(response);
     }
+
+    socket->disconnectFromHost();
+    buffers.remove(socket);
 }
 
-// Build HTML upload page with title and form
 QByteArray WebServer::buildUploadPage() const
 {
     const QByteArray html =
         "<!DOCTYPE html>"
         "<html lang='ru'><head><meta charset='UTF-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        "<title>📷 Barcode Photo Upload</title>"
+        "<title>📷 Загрузка фото штрих-кода</title>"
         "<style>"
         "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;"
         "margin:2rem;max-width:720px}"
@@ -176,10 +189,10 @@ QByteArray WebServer::buildUploadPage() const
         "input[type=file]{flex:1}"
         "button{padding:.6rem 1rem;font-weight:600;border:1px solid #ccc;border-radius:.5rem;}"
         "</style></head><body>"
-        "<h1>📷 Barcode Photo Upload</h1>"
+        "<h1>📷 Загрузка фото штрих-кода</h1>"
         "<form method='POST' enctype='multipart/form-data'>"
         "<input type='file' name='upload' accept='image/*' capture='environment'>"
-        "<button type='submit'>📤 Send for processing</button>"
+        "<button type='submit'>📤 Отправить на обработку</button>"
         "</form>"
         "</body></html>";
     return html;
