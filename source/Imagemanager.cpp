@@ -1,4 +1,4 @@
-#include "Imagemanager.h"
+#include "ImageManager.h"
 #include <QDebug>
 #include <QFileInfo>
 #include "FileException.h"

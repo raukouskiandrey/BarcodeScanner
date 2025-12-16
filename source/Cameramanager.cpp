@@ -1,4 +1,4 @@
-#include "Cameramanager.h"
+#include "CameraManager.h"
 #include <QDebug>
 #include "CameraException.h"
 

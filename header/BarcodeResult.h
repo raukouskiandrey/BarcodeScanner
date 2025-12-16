@@ -1,4 +1,3 @@
-// BarcodeResult.h
 #pragma once
 #include <string>
 

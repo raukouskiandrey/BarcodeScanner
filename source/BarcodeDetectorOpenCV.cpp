@@ -1,4 +1,4 @@
-#include "BarcodeDetectorOpenCV.h"
+#include "BarcodeDetectorOpenCV1D.h"
 #include <iostream>
 
 std::vector<std::vector<cv::Point>> BarcodeDetectorOpenCV::detectWithOpenCV(const cv::Mat& frame) const{
