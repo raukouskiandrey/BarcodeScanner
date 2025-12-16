@@ -24,11 +24,11 @@ public:
     BarcodeResult createDetailedResult(const BarcodeResult& basicResult);
     void saveToFile(const BarcodeResult& result) override;
 private:
-    BarcodeDetectorOpenCV opencvDetector;
-    CurvedBarcodeDetector curvedDetector;
-    ImagePreprocessor preprocessor;
-    ZBarDecoder zbarDecoder;
-    SmartDecoder smartDecoder;
+    [[no_unique_address]] BarcodeDetectorOpenCV opencvDetector;
+    [[no_unique_address]] CurvedBarcodeDetector curvedDetector;
+    [[no_unique_address]] ImagePreprocessor preprocessor;
+    [[no_unique_address]] ZBarDecoder zbarDecoder;
+    [[no_unique_address]] SmartDecoder smartDecoder;
     std::vector<cv::Rect> detectCurvedBarcodesOptimized(const cv::Mat& image);
     std::string filterBarcodeResult(const std::string& result);
     BarcodeResult parseZBarResult(const std::string& zbarResult);
