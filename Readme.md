@@ -1,6 +1,7 @@
 # BarcodeScanner (C++/Qt Desktop App)
 
 Приложение для анализа штрих-кода C++ и Qt .
+>[SonarCloud](https://sonarcloud.io/summary/overall?id=raukouskiandrey_BarcodeScanner&branch=main)
 
 ## Возможности
 
